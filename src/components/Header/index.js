@@ -30,7 +30,7 @@ export default function Header() {
           defaultValue="5"
           className="widthChange"
           onChange={(event) => {
-            dispatch(setLineWidth(parseInt(event.target.value)));
+            dispatch(setLineWidth(event.target.value));
           }}
         />
         <h5>{lineWidth}</h5>
