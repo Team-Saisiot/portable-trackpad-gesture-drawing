@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
+import io from "socket.io-client";
 import { useSelector } from "react-redux";
 
 export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
 
   const canvasRef = useRef(null);
+  const socketRef = useRef();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,6 +50,19 @@ export default function Drawing() {
       if (!emit) {
         return;
       }
+
+      socketRef.current.emit("drawing", {
+        startPosition: [
+          startPosition[0] / canvas.width,
+          startPosition[1] / canvas.height,
+        ],
+        endPosition: [
+          endPosition[0] / canvas.width,
+          endPosition[1] / canvas.height,
+        ],
+        color,
+        width,
+      });
     };
 
     const onMouseDown = (event) => {
@@ -99,6 +114,31 @@ export default function Drawing() {
 
     window.addEventListener("resize", onResize, false);
     onResize();
+
+    const onDrawingEvent = (data) => {
+      drawLine(
+        [
+          data.startPosition[0] * canvas.width,
+          data.startPosition[1] * canvas.height,
+        ],
+        [
+          data.endPosition[0] * canvas.width,
+          data.endPosition[1] * canvas.height,
+        ],
+        data.color,
+        data.width,
+      );
+    };
+
+    socketRef.current = io.connect(
+      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+    );
+
+    socketRef.current.on("drawing", onDrawingEvent);
+
+    return () => {
+      socketRef.current.disconnect();
+    };
   }, []);
 
   return (
