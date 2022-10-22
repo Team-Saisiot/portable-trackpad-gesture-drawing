@@ -13,6 +13,7 @@ module.exports = {
   rules: {
     semi: "warn",
     "no-unused-vars": "warn",
+    "react/prop-types": "off",
   },
   parserOptions: {
     ecmaFeatures: {
