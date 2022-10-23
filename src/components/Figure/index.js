@@ -20,11 +20,11 @@ export default function Figure() {
     window.addEventListener("resize", onResize, false);
     onResize();
 
-    function visualizer() {
+    const visualizer = () => {
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
-      for (var i = 0; i < objects.current.length; i++) {
+      for (let i = 0; i < objects.current.length; i++) {
         if (objects.current[i].type === "Rect") {
           context.fillStyle = objects.current[i].color;
           context.fillRect(
@@ -35,12 +35,12 @@ export default function Figure() {
           );
         }
       }
-    }
+    };
 
     visualizer();
 
-    const onMouseDown = function (event) {
-      for (var i = 0; i < objects.current.length; i++) {
+    const onMouseDown = (event) => {
+      for (let i = 0; i < objects.current.length; i++) {
         const { x, y, height, width } = objects.current[i];
 
         if (
@@ -58,7 +58,7 @@ export default function Figure() {
       }
     };
 
-    const onMouseMove = function (event) {
+    const onMouseMove = (event) => {
       if (objectActual.current != null) {
         objectActual.current.x = event.clientX - initialPosition.current[0];
         objectActual.current.y = event.clientY - initialPosition.current[1];
@@ -67,7 +67,7 @@ export default function Figure() {
       visualizer();
     };
 
-    const onMouseUp = function () {
+    const onMouseUp = () => {
       objectActual.current = null;
     };
 
