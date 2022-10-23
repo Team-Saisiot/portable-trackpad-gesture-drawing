@@ -35,6 +35,9 @@ export default function Header() {
         />
         <h5>{lineWidth}</h5>
       </div>
+      <div>
+        <button className="undoButton">undo</button>
+      </div>
     </HeaderContainer>
   );
 }
@@ -50,6 +53,15 @@ const HeaderContainer = styled.div`
   width: 87vw;
   background-color: #777;
   z-index: 1;
+
+  button {
+    font-size: 1rem;
+    border: none;
+    color: #3a4beb;
+    padding: 3vmin 3vmin;
+    margin-right: 2vmin;
+    border-radius: 1rem;
+  }
 
   .header-title {
     margin: 5vmin 0;
