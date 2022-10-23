@@ -43,6 +43,34 @@ export default function Drawing() {
       false,
     );
 
+    const undo = () => {
+      if (index < 0) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        undoStore = [];
+        index = -1;
+      } else if (index === 0) {
+        window.alert("전부 지우시려면 clear를 눌러주세요!");
+      } else {
+        index -= 1;
+        redoStore.unshift(undoStore.pop());
+        context.putImageData(undoStore[index], 0, 0);
+      }
+    };
+
+    const redo = () => {
+      if (redoStore.length > 0) {
+        index += 1;
+        undoStore.push(redoStore.shift());
+        context.putImageData(undoStore[index], 0, 0);
+      }
+    };
+
+    const clear = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      undoStore = [];
+      index = -1;
+    };
+
     const drawLine = (startPosition, endPosition, color, width, emit) => {
       context.beginPath();
       context.moveTo(...startPosition);
@@ -113,38 +141,14 @@ export default function Drawing() {
       }
     };
 
-    undoElement.onclick = () => {
-      if (index < 0) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        undoStore = [];
-        index = -1;
-      } else if (index === 0) {
-        window.alert("전부 지우시려면 clear를 눌러주세요!");
-      } else {
-        index -= 1;
-        redoStore.unshift(undoStore.pop());
-        context.putImageData(undoStore[index], 0, 0);
-      }
-    };
-
-    redoElement.onclick = () => {
-      if (redoStore.length > 0) {
-        index += 1;
-        undoStore.push(redoStore.shift());
-        context.putImageData(undoStore[index], 0, 0);
-      }
-    };
-
-    clearElement.onclick = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      undoStore = [];
-      index = -1;
-    };
-
     canvas.addEventListener("mousedown", onMouseDown, false);
     canvas.addEventListener("mouseup", onMouseUp, false);
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
+
+    clearElement.addEventListener("click", clear);
+    redoElement.addEventListener("click", redo);
+    undoElement.addEventListener("click", undo);
 
     const onResize = () => {
       canvas.width = window.innerWidth;
