@@ -1,11 +1,19 @@
 import React from "react";
 import styled from "styled-components";
 import Drawing from "../Drawing";
+import { useSelector } from "react-redux";
+import Figure from "../Figure";
 
 export default function MainCanvas() {
+  const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
+
   return (
     <MainCanvasContainer>
-      <Drawing />
+      {selectedTool === "drawing" ? (
+        <Drawing />
+      ) : selectedTool === "figure" ? (
+        <Figure />
+      ) : null}
     </MainCanvasContainer>
   );
 }
