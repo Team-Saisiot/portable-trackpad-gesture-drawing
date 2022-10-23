@@ -33,6 +33,33 @@ export default function Figure() {
             objects.current[i].width,
             objects.current[i].height,
           );
+        } else if (objects.current[i].type === "Circle") {
+          context.beginPath();
+          context.arc(
+            objects.current[i].x,
+            objects.current[i].y,
+            objects.current[i].height,
+            0,
+            2 * Math.PI,
+          );
+
+          context.stroke();
+          context.fillStyle = objects.current[i].color;
+          context.fill();
+        } else if (objects.current[i].type === "Triangle") {
+          context.beginPath();
+          context.moveTo(objects.current[i].x, objects.current[i].y);
+          context.lineTo(
+            objects.current[i].x + objects.current[i].width / 2,
+            objects.current[i].y - objects.current[i].height,
+          );
+          context.lineTo(
+            objects.current[i].x + objects.current[i].width,
+            objects.current[i].y,
+          );
+          context.closePath();
+          context.fillStyle = objects.current[i].color;
+          context.fill();
         }
       }
     };
@@ -110,20 +137,50 @@ export default function Figure() {
           />
         </div>
       </div>
-      <button
-        onClick={() => {
-          objects.current.push({
-            x: 320,
-            y: 250,
-            width: 50,
-            height: 50,
-            color: "black",
-            type: "Rect",
-          });
-        }}
-      >
-        사각형 생성
-      </button>
+      <div className="buttonBox">
+        <button
+          onClick={() => {
+            objects.current.push({
+              x: 320,
+              y: 250,
+              width: 50,
+              height: 50,
+              color: "black",
+              type: "Rect",
+            });
+          }}
+        >
+          사각형 생성
+        </button>
+        <button
+          onClick={() => {
+            objects.current.push({
+              x: 320,
+              y: 250,
+              width: 50,
+              height: 50,
+              color: "black",
+              type: "Circle",
+            });
+          }}
+        >
+          원 생성
+        </button>
+        <button
+          onClick={() => {
+            objects.current.push({
+              x: 250,
+              y: 300,
+              width: 100,
+              height: 50,
+              color: "black",
+              type: "Triangle",
+            });
+          }}
+        >
+          삼각형 생성
+        </button>
+      </div>
     </FigureContainer>
   );
 }
@@ -142,7 +199,7 @@ const FigureContainer = styled.div`
     bottom: 10vh;
   }
 
-  button {
+  .buttonBox {
     position: absolute;
     right: 18vw;
     bottom: 10vh;
