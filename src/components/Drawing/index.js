@@ -7,7 +7,7 @@ export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
 
   const canvasRef = useRef(null);
-  const socketRef = useRef();
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
