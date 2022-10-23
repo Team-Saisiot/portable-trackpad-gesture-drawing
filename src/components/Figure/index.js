@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
+import io from "socket.io-client";
 
 export default function Figure() {
   const canvasRef = useRef(null);
@@ -7,10 +8,22 @@ export default function Figure() {
   const objects = useRef([]);
   const objectActualIndex = useRef(null);
   const objectActual = useRef({});
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
+
+    socketRef.current = io.connect(
+      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+    );
+
+    socketRef.current.on("drawing", (data) => {
+      if (Array.isArray(data)) {
+        objects.current = data;
+        visualizer();
+      }
+    });
 
     const onResize = () => {
       canvas.width = window.innerWidth;
@@ -91,6 +104,8 @@ export default function Figure() {
         objectActual.current.y = event.clientY - initialPosition.current[1];
       }
 
+      socketRef.current.emit("drawing", objects.current);
+
       visualizer();
     };
 
@@ -102,6 +117,41 @@ export default function Figure() {
     canvas.addEventListener("mouseup", onMouseUp, false);
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
+
+    socketRef.current.on("drawing", (data) => {
+      if (data === "triangle") {
+        objects.current.push({
+          x: 250,
+          y: 300,
+          width: 100,
+          height: 50,
+          color: "black",
+          type: "Triangle",
+        });
+      } else if (data === "circle") {
+        objects.current.push({
+          x: 320,
+          y: 250,
+          width: 50,
+          height: 50,
+          color: "black",
+          type: "Circle",
+        });
+      } else if (data === "square") {
+        objects.current.push({
+          x: 320,
+          y: 250,
+          width: 50,
+          height: 50,
+          color: "black",
+          type: "Rect",
+        });
+      }
+    });
+
+    return () => {
+      socketRef.current.disconnect();
+    };
   }, []);
 
   return (
