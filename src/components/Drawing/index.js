@@ -15,6 +15,7 @@ export default function Drawing() {
     const colorElement = document.querySelector(".colorChange");
     const widthElement = document.querySelector(".widthChange");
     const undoElement = document.querySelector(".undoButton");
+    const redoElement = document.querySelector(".redoButton");
     const currentStyle = {
       color: lineColor,
       width: lineWidth,
@@ -22,6 +23,7 @@ export default function Drawing() {
 
     let drawing = false;
     let undoStore = [];
+    let redoStore = [];
     let index = -1;
 
     colorElement.addEventListener(
@@ -119,6 +121,15 @@ export default function Drawing() {
         window.alert("전부 지우시려면 clear를 눌러주세요!");
       } else {
         index -= 1;
+        redoStore.unshift(undoStore.pop());
+        context.putImageData(undoStore[index], 0, 0);
+      }
+    };
+
+    redoElement.onclick = () => {
+      if (redoStore.length > 0) {
+        index += 1;
+        undoStore.push(redoStore.shift());
         context.putImageData(undoStore[index], 0, 0);
       }
     };
