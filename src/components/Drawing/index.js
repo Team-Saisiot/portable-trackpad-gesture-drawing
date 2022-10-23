@@ -16,6 +16,7 @@ export default function Drawing() {
     const widthElement = document.querySelector(".widthChange");
     const undoElement = document.querySelector(".undoButton");
     const redoElement = document.querySelector(".redoButton");
+    const clearElement = document.querySelector(".clearButton");
     const currentStyle = {
       color: lineColor,
       width: lineWidth,
@@ -132,6 +133,12 @@ export default function Drawing() {
         undoStore.push(redoStore.shift());
         context.putImageData(undoStore[index], 0, 0);
       }
+    };
+
+    clearElement.onclick = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      undoStore = [];
+      index = -1;
     };
 
     canvas.addEventListener("mousedown", onMouseDown, false);

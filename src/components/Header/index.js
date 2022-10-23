@@ -41,6 +41,9 @@ export default function Header() {
       <div>
         <button className="redoButton">redo</button>
       </div>
+      <div>
+        <button className="clearButton">clear</button>
+      </div>
     </HeaderContainer>
   );
 }
