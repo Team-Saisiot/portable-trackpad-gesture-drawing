@@ -1,10 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import io from "socket.io-client";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setLineColor, setLineWidth } from "../../store";
 
 export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
+  const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
+
+  const [isModalShow, setIsModalShow] = useState(false);
+
+  const dispatch = useDispatch();
 
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
@@ -14,18 +20,18 @@ export default function Drawing() {
     const context = canvas.getContext("2d");
     const colorElement = document.querySelector(".colorChange");
     const widthElement = document.querySelector(".widthChange");
-    const undoElement = document.querySelector(".undoButton");
-    const redoElement = document.querySelector(".redoButton");
-    const clearElement = document.querySelector(".clearButton");
-    const currentStyle = {
-      color: lineColor,
-      width: lineWidth,
-    };
+    const undoElement = document.querySelector(".drawingUndoButton");
+    const redoElement = document.querySelector(".drawingRedoButton");
+    const clearElement = document.querySelector(".drawingClearButton");
 
     let drawing = false;
     let undoStore = [];
     let redoStore = [];
     let historyIndex = -1;
+    let currentStyle = {
+      color: lineColor,
+      width: lineWidth,
+    };
 
     colorElement.addEventListener(
       "change",
@@ -46,12 +52,14 @@ export default function Drawing() {
     const undo = () => {
       if (historyIndex < 0) {
         context.clearRect(0, 0, canvas.width, canvas.height);
+
         undoStore = [];
         historyIndex = -1;
       } else if (historyIndex === 0) {
         window.alert("전부 지우시려면 clear를 눌러주세요!");
       } else {
         historyIndex -= 1;
+
         redoStore.unshift(undoStore.pop());
         context.putImageData(undoStore[historyIndex], 0, 0);
       }
@@ -186,7 +194,90 @@ export default function Drawing() {
 
   return (
     <DrawingContainer>
-      <canvas ref={canvasRef} />
+      <canvas
+        ref={canvasRef}
+        className="drawingCanvas"
+        style={{ zIndex: selectedTool === "drawing" ? 1 : 0 }}
+      />
+      <div
+        className="drawing-floatingBox"
+        style={{
+          zIndex: selectedTool === "drawing" ? 1 : -1,
+        }}
+      >
+        <div
+          className="drawing-floatingModal"
+          style={{
+            transform: !isModalShow
+              ? ["translateX(100vmin)"]
+              : ["translateX(0)"],
+            display: selectedTool === "drawing" ? "flex" : "none",
+          }}
+        >
+          <h1>Drawing</h1>
+          <div className="drawing-toolBox">
+            <div className="drawing-tool">
+              <p>선 색상변경</p>
+              <input
+                type="color"
+                className="colorChange"
+                onChange={(event) => {
+                  dispatch(setLineColor(event.target.value));
+                }}
+              />
+              <h5>{lineColor}</h5>
+            </div>
+            <div className="drawing-tool">
+              <p>선 굵기</p>
+              <input
+                type="range"
+                min="1"
+                max="200"
+                defaultValue="5"
+                className="widthChange"
+                onChange={(event) => {
+                  dispatch(setLineWidth(event.target.value));
+                }}
+              />
+              <h5>{lineWidth}</h5>
+            </div>
+          </div>
+          <div>
+            <button className="drawingUndoButton drawing-historyButton">
+              undo
+            </button>
+            <button className="drawingRedoButton drawing-historyButton">
+              redo
+            </button>
+            <button className="drawingClearButton drawing-historyButton">
+              clear
+            </button>
+          </div>
+          <div
+            onClick={() => {
+              setIsModalShow(false);
+            }}
+            className="drawing-closeButton"
+          >
+            close
+          </div>
+        </div>
+        <div
+          className="drawing-floatButton"
+          style={{
+            transform: isModalShow
+              ? ["translateY(100vmin)"]
+              : ["translateY(0)"],
+            display: selectedTool === "drawing" ? "flex" : "none",
+            zIndex: selectedTool === "drawing" ? 1 : -1,
+          }}
+          onClick={() => {
+            setIsModalShow(true);
+          }}
+        >
+          +
+        </div>
+      </div>
     </DrawingContainer>
   );
 }
@@ -196,6 +287,112 @@ const DrawingContainer = styled.div`
     position: absolute;
     top: 0;
     left: -20vw;
-    border: 2px solid black;
+    z-index: 1;
+  }
+
+  .drawing-floatingBox {
+    position: absolute;
+    bottom: 4vmin;
+    right: 5vmin;
+    transition: all 0.2s ease-in-out;
+
+    .drawing-floatButton {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      right: 0;
+      bottom: 0;
+      height: 4vmin;
+      width: 4vmin;
+      border-radius: 4vmin;
+      color: white;
+      background-color: #777;
+      user-select: none;
+      cursor: pointer;
+      transition: all 0.4s ease-in-out;
+
+      :hover {
+        background-color: hsl(0, 0%, 80%);
+      }
+
+      :active {
+        background-color: hsl(0, 0%, 60%);
+      }
+    }
+
+    .drawing-floatingModal {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 48vmin;
+      width: 30vmin;
+      background-color: hsl(0, 0%, 80%);
+      border-radius: 3vmin;
+      transition: all 0.4s ease-in-out;
+
+      h1 {
+        margin-bottom: 2vh;
+      }
+
+      .drawing-toolBox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+
+        .drawing-tool {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          margin-bottom: 1vh;
+        }
+
+        p {
+          color: hsl(0, 0%, 10%);
+          margin-top: 1vmin;
+          margin-bottom: 0.5vmin;
+        }
+      }
+
+      .drawing-historyButton {
+        margin: 0 0.5vmin;
+        padding: 1vmin 1.4vmin;
+        color: #777;
+        font-size: 1.5vmin;
+        border: none;
+        border-radius: 1.5vmin;
+        transition: all 0.2s ease-in-out;
+
+        :hover {
+          background-color: hsl(0, 0%, 80%);
+        }
+
+        :active {
+          background-color: hsl(0, 0%, 60%);
+        }
+      }
+
+      .drawing-closeButton {
+        margin-top: 2vh;
+        padding: 0.5vmin 2vmin;
+        color: hsl(0, 0%, 80%);
+        background-color: hsl(0, 0%, 40%);
+        border-radius: 1vmin;
+        user-select: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+
+        :hover {
+          background-color: hsl(0, 0%, 50%);
+        }
+
+        :active {
+          background-color: hsl(0, 0%, 30%);
+        }
+      }
+    }
   }
 `;
