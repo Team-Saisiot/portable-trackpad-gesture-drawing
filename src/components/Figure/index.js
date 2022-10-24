@@ -9,10 +9,16 @@ export default function Figure() {
   const objectActualIndex = useRef(null);
   const objectActual = useRef({});
   const socketRef = useRef(null);
+  const undoStore = useRef([]);
+  const redoStore = useRef([]);
+  const historyIndex = useRef(-1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
+    const undoElement = document.querySelector(".undoButton");
+    const redoElement = document.querySelector(".redoButton");
+    const clearElement = document.querySelector(".clearButton");
 
     socketRef.current = io.connect(
       `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
@@ -21,6 +27,7 @@ export default function Figure() {
     socketRef.current.on("drawing", (data) => {
       if (Array.isArray(data)) {
         objects.current = data;
+
         visualizer();
       }
     });
@@ -33,12 +40,44 @@ export default function Figure() {
     window.addEventListener("resize", onResize, false);
     onResize();
 
+    const undo = () => {
+      if (historyIndex.current < 0) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        undoStore.current = [];
+        historyIndex.current = -1;
+      } else if (historyIndex.current === 0) {
+        window.alert("전부 지우시려면 clear를 눌러주세요!");
+      } else {
+        historyIndex.current -= 1;
+
+        redoStore.current.unshift(undoStore.current.pop());
+        context.putImageData(undoStore.current[historyIndex.current], 0, 0);
+      }
+    };
+
+    const redo = () => {
+      if (redoStore.current.length > 0) {
+        historyIndex.current += 1;
+
+        undoStore.current.push(redoStore.current.shift());
+        context.putImageData(undoStore.current[historyIndex.current], 0, 0);
+      }
+    };
+
+    const clear = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      undoStore.current = [];
+      objects.current = [];
+      historyIndex.current = -1;
+    };
+
     const visualizer = () => {
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
       for (let i = 0; i < objects.current.length; i++) {
-        if (objects.current[i].type === "Rect") {
+        if (objects.current[i].type === "Square") {
           context.fillStyle = objects.current[i].color;
           context.fillRect(
             objects.current[i].x,
@@ -111,6 +150,14 @@ export default function Figure() {
 
     const onMouseUp = () => {
       objectActual.current = null;
+
+      if (event.type !== "mouseout") {
+        undoStore.current.push(
+          context.getImageData(0, 0, canvas.width, canvas.height),
+        );
+
+        historyIndex.current += 1;
+      }
     };
 
     canvas.addEventListener("mousedown", onMouseDown, false);
@@ -144,10 +191,14 @@ export default function Figure() {
           width: 50,
           height: 50,
           color: "black",
-          type: "Rect",
+          type: "Square",
         });
       }
     });
+
+    clearElement.addEventListener("click", clear);
+    redoElement.addEventListener("click", redo);
+    undoElement.addEventListener("click", undo);
 
     return () => {
       socketRef.current.disconnect();
@@ -196,7 +247,7 @@ export default function Figure() {
               width: 50,
               height: 50,
               color: "black",
-              type: "Rect",
+              type: "Square",
             });
           }}
         >
