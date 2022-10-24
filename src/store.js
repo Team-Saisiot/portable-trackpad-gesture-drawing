@@ -18,7 +18,7 @@ const lineStyle = createSlice({
 
 const selectedTool = createSlice({
   name: "selectedTool",
-  initialState: { selectedTool: "" },
+  initialState: { selectedTool: "drawing" },
   reducers: {
     setSelectedTool(state, action) {
       state.selectedTool = action.payload;

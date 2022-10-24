@@ -4,7 +4,6 @@ import SideBarTool from "../SidebarTool";
 
 export default function SideBar() {
   const tools = [
-    { name: "select", icon: "north_west" },
     { name: "drawing", icon: "draw" },
     { name: "figure", icon: "category" },
   ];
