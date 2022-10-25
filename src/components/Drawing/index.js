@@ -167,18 +167,20 @@ export default function Drawing() {
     onResize();
 
     const onDrawingEvent = (data) => {
-      drawLine(
-        [
-          data.startPosition[0] * canvas.width,
-          data.startPosition[1] * canvas.height,
-        ],
-        [
-          data.endPosition[0] * canvas.width,
-          data.endPosition[1] * canvas.height,
-        ],
-        data.color,
-        data.width,
-      );
+      if (data.startPosition) {
+        drawLine(
+          [
+            data.startPosition[0] * canvas.width,
+            data.startPosition[1] * canvas.height,
+          ],
+          [
+            data.endPosition[0] * canvas.width,
+            data.endPosition[1] * canvas.height,
+          ],
+          data.color,
+          data.width,
+        );
+      }
     };
 
     socketRef.current = io.connect(
