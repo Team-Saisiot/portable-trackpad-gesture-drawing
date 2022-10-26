@@ -26,12 +26,24 @@ const selectedTool = createSlice({
   },
 });
 
+const isFoldSideBar = createSlice({
+  name: "isFoldSideBar",
+  initialState: { status: false },
+  reducers: {
+    setIsFoldSideBar(state, action) {
+      state.isFoldSideBar = action.payload;
+    },
+  },
+});
+
 export const { setLineColor, setLineWidth } = lineStyle.actions;
 export const { setSelectedTool } = selectedTool.actions;
+export const { setIsFoldSideBar } = isFoldSideBar.actions;
 
 export default configureStore({
   reducer: {
     lineStyle: lineStyle.reducer,
     selectedTool: selectedTool.reducer,
+    isFoldSideBar: isFoldSideBar.reducer,
   },
 });

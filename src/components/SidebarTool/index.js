@@ -1,10 +1,11 @@
 import React from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 import { setSelectedTool } from "../../store";
 import capitalizeFirstLetter from "../../utils/capitalizeFirstLetter";
 
 export default function SideBarTool({ tool }) {
+  const { isFoldSideBar } = useSelector(({ isFoldSideBar }) => isFoldSideBar);
   const dispatch = useDispatch();
 
   return (
@@ -13,10 +14,21 @@ export default function SideBarTool({ tool }) {
         dispatch(setSelectedTool(tool.name));
       }}
     >
-      <span className="material-symbols-outlined sidebar-icon">
+      <span
+        className="material-symbols-outlined sidebar-icon"
+        style={{
+          transform: isFoldSideBar ? ["translateX(10vmin)"] : ["translateX(0)"],
+        }}
+      >
         {tool.icon}
       </span>
-      {capitalizeFirstLetter(tool.name)}
+      <div
+        style={{
+          opacity: isFoldSideBar ? 0 : 1,
+        }}
+      >
+        {capitalizeFirstLetter(tool.name)}
+      </div>
     </SideBarToolContainer>
   );
 }
@@ -26,8 +38,8 @@ const SideBarToolContainer = styled.div`
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 5vh;
-  padding: 1vh 0;
-  width: 10vw;
+  padding: 2vh 0;
+  width: 13vw;
   border-radius: 1vmin;
   user-select: none;
   cursor: pointer;
@@ -36,14 +48,27 @@ const SideBarToolContainer = styled.div`
   .sidebar-icon {
     font-weight: bold;
     user-select: none;
-    margin: 0 1vw;
+    margin-left: 2.2vw;
+    margin-right: 1.5vw;
+    transition: all 0.4s ease-in-out;
   }
 
   :hover {
-    background-color: hsl(0, 0%, 90%);
+    background-color: #7895b2;
+
+    div,
+    span {
+      color: #f5efe6;
+    }
   }
 
   :active {
-    background-color: hsl(0, 0%, 70%);
+    background-color: #7895b2;
+    opacity: 0.5;
+
+    div,
+    span {
+      color: #f5efe6;
+    }
   }
 `;
