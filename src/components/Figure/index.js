@@ -119,6 +119,7 @@ export default function Figure() {
       historyIndex.current = data.historyIndex;
 
       context.clearRect(0, 0, canvas.width, canvas.height);
+
       const currentObject = _.cloneDeep(undoStore.current[data.historyIndex]);
 
       objects.current = currentObject;
@@ -189,6 +190,7 @@ export default function Figure() {
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         const popUndoStore = _.cloneDeep(undoStore.current.pop());
+
         redoStore.current.unshift(popUndoStore);
 
         objects.current.length = 0;
@@ -208,6 +210,7 @@ export default function Figure() {
         const popUndoStore = _.cloneDeep(undoStore.current.pop());
 
         redoStore.current.unshift(popUndoStore);
+
         const lastUndoStoreData = _.cloneDeep(
           undoStore.current[historyIndex.current],
         );
@@ -236,7 +239,6 @@ export default function Figure() {
         const lastUndoStoreData = _.cloneDeep(
           undoStore.current[historyIndex.current],
         );
-        objects.current = lastUndoStoreData;
 
         objects.current = lastUndoStoreData;
 
@@ -297,8 +299,9 @@ export default function Figure() {
 
     const onMouseUp = (event) => {
       if (objectActual.current !== null && event.type !== "mouseout") {
-        historyIndex.current += 1;
         const currentObject = _.cloneDeep(objects.current);
+
+        historyIndex.current += 1;
 
         undoStore.current.push(currentObject);
         redoStore.current.length = 0;
@@ -328,8 +331,9 @@ export default function Figure() {
   }, []);
 
   const inputUndo = (data) => {
-    historyIndex.current += 1;
     const currentObject = _.cloneDeep(data);
+
+    historyIndex.current += 1;
     undoStore.current.push(currentObject);
     redoStore.current = [];
 
