@@ -8,7 +8,6 @@ export default function Figure() {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
-  const [reRender, setReRender] = useState(0);
 
   const canvasRef = useRef(null);
   const initialPosition = useRef([0, 0]);
@@ -336,8 +335,6 @@ export default function Figure() {
     historyIndex.current += 1;
     undoStore.current.push(currentObject);
     redoStore.current = [];
-
-    setReRender(reRender + 1);
 
     socketRef.current.emit("historyStore", {
       undoStore: undoStore.current,
