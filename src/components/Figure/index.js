@@ -25,6 +25,7 @@ export default function Figure() {
     let undoStore = [];
     let redoStore = [];
     let historyIndex = -1;
+    let scaleCount = 0;
 
     socketRef.current = io.connect(
       `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
@@ -32,17 +33,17 @@ export default function Figure() {
 
     socketRef.current.on("drawing", (data) => {
       if (Array.isArray(data)) {
-        // objects.current = data;
-        //
-        // visualizer();
+        objects.current = data;
+
+        visualizer();
       } else if (data === "triangle") {
         objects.current.push({
           x: 250,
           y: 300,
-          width: 100,
-          height: 50,
+          width: 50,
+          height: (Math.sqrt(3) / 2) * 50,
           color: "black",
-          type: "Triangle",
+          type: "triangle",
         });
 
         visualizer();
@@ -53,7 +54,7 @@ export default function Figure() {
           width: 50,
           height: 50,
           color: "black",
-          type: "Circle",
+          type: "circle",
         });
 
         visualizer();
@@ -64,8 +65,47 @@ export default function Figure() {
           width: 50,
           height: 50,
           color: "black",
-          type: "Square",
+          type: "square",
         });
+
+        visualizer();
+      } else if (data === "scaleUp") {
+        scaleCount++;
+        const selectedFigure = objects.current[objectActualIndex.current];
+
+        if (scaleCount === 2) {
+          if (selectedFigure.type === "triangle") {
+            selectedFigure.width += 1;
+            selectedFigure.height += Math.sqrt(3) / 2;
+          } else {
+            selectedFigure.width += 1;
+            selectedFigure.height += 1;
+          }
+
+          scaleCount = 0;
+        }
+
+        visualizer();
+      } else if (data === "scaleDown") {
+        const selectedFigure = objects.current[objectActualIndex.current];
+
+        if (selectedFigure.width < 11 || selectedFigure.height < 11) {
+          return;
+        }
+
+        scaleCount++;
+
+        if (scaleCount === 2) {
+          if (selectedFigure.type === "triangle") {
+            selectedFigure.width -= 1;
+            selectedFigure.height -= Math.sqrt(3) / 2;
+          } else {
+            selectedFigure.width -= 1;
+            selectedFigure.height -= 1;
+          }
+
+          scaleCount = 0;
+        }
 
         visualizer();
       }
@@ -84,7 +124,7 @@ export default function Figure() {
       context.beginPath();
 
       for (let i = 0; i < objects.current.length; i++) {
-        if (objects.current[i].type === "Square") {
+        if (objects.current[i].type === "square") {
           context.fillStyle = objects.current[i].color;
           context.fillRect(
             objects.current[i].x,
@@ -92,12 +132,12 @@ export default function Figure() {
             objects.current[i].width,
             objects.current[i].height,
           );
-        } else if (objects.current[i].type === "Circle") {
+        } else if (objects.current[i].type === "circle") {
           context.beginPath();
           context.arc(
             objects.current[i].x,
             objects.current[i].y,
-            objects.current[i].height,
+            objects.current[i].height / 2,
             0,
             2 * Math.PI,
           );
@@ -105,7 +145,7 @@ export default function Figure() {
           context.stroke();
           context.fillStyle = objects.current[i].color;
           context.fill();
-        } else if (objects.current[i].type === "Triangle") {
+        } else if (objects.current[i].type === "triangle") {
           context.beginPath();
           context.moveTo(objects.current[i].x, objects.current[i].y);
           context.lineTo(
@@ -276,7 +316,7 @@ export default function Figure() {
                     width: 50,
                     height: 50,
                     color: "black",
-                    type: "Square",
+                    type: "square",
                   });
                 }}
               >
@@ -290,7 +330,7 @@ export default function Figure() {
                     width: 50,
                     height: 50,
                     color: "black",
-                    type: "Circle",
+                    type: "circle",
                   });
                 }}
               >
@@ -301,10 +341,10 @@ export default function Figure() {
                   objects.current.push({
                     x: 250,
                     y: 300,
-                    width: 100,
-                    height: 50,
+                    width: 50,
+                    height: (Math.sqrt(3) / 2) * 50,
                     color: "black",
-                    type: "Triangle",
+                    type: "triangle",
                   });
                 }}
               >
