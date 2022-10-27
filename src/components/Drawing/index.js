@@ -3,17 +3,24 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import { useDispatch, useSelector } from "react-redux";
 import { setLineColor, setLineWidth } from "../../store";
+import getLocalIp from "../../utils/getLocalIp";
 
 export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
+  const [localIp, setLocalIp] = useState("");
 
   const dispatch = useDispatch();
 
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
+  const lineObjects = useRef([]);
+  const linePath = useRef([]);
+  const undoStore = useRef([]);
+  const redoStore = useRef([]);
+  const historyIndex = useRef(-1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -25,13 +32,12 @@ export default function Drawing() {
     const clearElement = document.querySelector(".drawingClearButton");
 
     let drawing = false;
-    let undoStore = [];
-    let redoStore = [];
-    let historyIndex = -1;
     let currentStyle = {
       color: lineColor,
       width: lineWidth,
     };
+
+    getLocalIp(setLocalIp);
 
     colorElement.addEventListener(
       "change",
@@ -50,33 +56,68 @@ export default function Drawing() {
     );
 
     const undo = () => {
-      if (historyIndex < 0) {
+      if (historyIndex.current < 0) {
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        undoStore = [];
-        historyIndex = -1;
-      } else if (historyIndex === 0) {
-        window.alert("전부 지우시려면 clear를 눌러주세요!");
+        undoStore.current.length = 0;
+        historyIndex.current = -1;
+      } else if (historyIndex.current === 0) {
+        window.alert("더이상 되돌아갈 작업이 없습니다.");
       } else {
-        historyIndex -= 1;
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
-        redoStore.unshift(undoStore.pop());
-        context.putImageData(undoStore[historyIndex], 0, 0);
+        historyIndex.current -= 1;
+
+        redoStore.current.unshift(undoStore.current.pop());
+
+        lineObjects.current = undoStore.current[historyIndex.current];
+
+        visualizer(undoStore.current[historyIndex.current]);
+
+        socketRef.current.emit("drawingHistory", {
+          lineObjects: lineObjects.current,
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
     };
 
     const redo = () => {
-      if (redoStore.length > 0) {
-        historyIndex += 1;
-        undoStore.push(redoStore.shift());
-        context.putImageData(undoStore[historyIndex], 0, 0);
+      if (redoStore.current.length > 0) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        historyIndex.current += 1;
+
+        undoStore.current.push(redoStore.current.shift());
+
+        lineObjects.current = undoStore.current[historyIndex.current];
+
+        visualizer(undoStore.current[historyIndex.current]);
+
+        socketRef.current.emit("drawingHistory", {
+          lineObjects: lineObjects.current,
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
     };
 
     const clear = () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
-      undoStore = [];
-      historyIndex = -1;
+
+      undoStore.current.length = 0;
+      redoStore.current.length = 0;
+      historyIndex.current = -1;
+      lineObjects.current = [];
+
+      socketRef.current.emit("drawingHistory", {
+        lineObjects: [],
+        undoStore: [],
+        redoStore: [],
+        historyIndex: -1,
+      });
     };
 
     const drawLine = (startPosition, endPosition, color, width, emit) => {
@@ -107,6 +148,14 @@ export default function Drawing() {
       });
     };
 
+    const visualizer = (path) => {
+      for (let i = 0; i < path.length; i++) {
+        for (let j = 0; j < path[i].length; j++) {
+          drawLine(...path[i][j]);
+        }
+      }
+    };
+
     const onMouseDown = (event) => {
       drawing = true;
       currentStyle.startPosition = [event.clientX, event.clientY];
@@ -124,6 +173,14 @@ export default function Drawing() {
         currentStyle.width,
         true,
       );
+
+      linePath.current.push([
+        currentStyle.startPosition,
+        [event.clientX, event.clientY],
+        currentStyle.color,
+        currentStyle.width,
+        true,
+      ]);
 
       currentStyle.startPosition = [event.clientX, event.clientY];
     };
@@ -144,9 +201,21 @@ export default function Drawing() {
       );
 
       if (event.type !== "mouseout") {
-        undoStore.push(context.getImageData(0, 0, canvas.width, canvas.height));
-        historyIndex += 1;
+        historyIndex.current += 1;
+        redoStore.current.length = 0;
+
+        lineObjects.current.push([...linePath.current]);
+        undoStore.current.push([...lineObjects.current]);
+
+        socketRef.current.emit("drawingHistory", {
+          lineObjects: lineObjects.current,
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
+
+      linePath.current.length = 0;
     };
 
     canvas.addEventListener("mousedown", onMouseDown, false);
@@ -159,8 +228,8 @@ export default function Drawing() {
     undoElement.addEventListener("click", undo);
 
     const onResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = 2560;
+      canvas.height = 1600;
     };
 
     window.addEventListener("resize", onResize, false);
@@ -184,13 +253,23 @@ export default function Drawing() {
     };
 
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
     );
 
     socketRef.current.on("drawing", onDrawingEvent);
+    socketRef.current.on("drawingHistory", (data) => {
+      lineObjects.current = [...data.lineObjects];
+      undoStore.current = [...data.undoStore];
+      redoStore.current = [...data.redoStore];
+      historyIndex.current = data.historyIndex;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      visualizer([...data.lineObjects]);
+    });
 
     return () => {
-      socketRef.current.disconnect();
+      socketRef.current.off();
     };
   }, []);
 
@@ -205,6 +284,7 @@ export default function Drawing() {
         className="drawing-floatingBox"
         style={{
           zIndex: selectedTool === "drawing" ? 1 : -1,
+          display: selectedTool === "drawing" ? "flex" : "none",
         }}
       >
         <div
@@ -213,7 +293,7 @@ export default function Drawing() {
             transform: !isModalShow
               ? ["translateX(100vmin)"]
               : ["translateX(0)"],
-            display: selectedTool === "drawing" ? "flex" : "none",
+            display: isModalShow ? "flex" : "none",
           }}
         >
           <h1>Drawing</h1>

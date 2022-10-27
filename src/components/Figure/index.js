@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import io from "socket.io-client";
+import _ from "lodash";
 import { useSelector } from "react-redux";
+import getLocalIp from "../../utils/getLocalIp";
 
 export default function Figure() {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
+  const [localIp, setLocalIp] = useState("");
 
   const canvasRef = useRef(null);
   const initialPosition = useRef([0, 0]);
@@ -14,6 +17,9 @@ export default function Figure() {
   const objectActualIndex = useRef(null);
   const objectActual = useRef({});
   const socketRef = useRef(null);
+  const undoStore = useRef([]);
+  const redoStore = useRef([]);
+  const historyIndex = useRef(-1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,17 +28,16 @@ export default function Figure() {
     const redoElement = document.querySelector(".figureRedoButton");
     const clearElement = document.querySelector(".figureClearButton");
 
-    let undoStore = [];
-    let redoStore = [];
-    let historyIndex = -1;
     let scaleCount = 0;
 
+    getLocalIp(setLocalIp);
+
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
     );
 
     socketRef.current.on("drawing", (data) => {
-      if (Array.isArray(data)) {
+      if (Array.isArray(data) && typeof data[0] !== "string") {
         objects.current = data;
 
         visualizer();
@@ -111,6 +116,20 @@ export default function Figure() {
       }
     });
 
+    socketRef.current.on("historyStore", (data) => {
+      undoStore.current = data.undoStore;
+      redoStore.current = data.redoStore;
+      historyIndex.current = data.historyIndex;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      const currentObject = _.cloneDeep(undoStore.current[data.historyIndex]);
+
+      objects.current = currentObject;
+
+      visualizer();
+    });
+
     const onResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -168,36 +187,85 @@ export default function Figure() {
     visualizer();
 
     const undo = () => {
-      if (historyIndex < 0) {
+      if (historyIndex.current < 0) {
+        window.alert("더이상 되돌아갈 작업이 없습니다.");
+      } else if (historyIndex.current === 0) {
+        const popUndoStore = _.cloneDeep(undoStore.current.pop());
+
         context.clearRect(0, 0, canvas.width, canvas.height);
+        redoStore.current.unshift(popUndoStore);
 
-        undoStore = [];
-        historyIndex = -1;
-      } else if (historyIndex === 0) {
-        window.alert("전부 지우시려면 clear를 눌러주세요!");
+        objects.current.length = 0;
+
+        socketRef.current.emit("historyStore", {
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
+
+        historyIndex.current = -1;
       } else {
-        historyIndex -= 1;
+        const popUndoStore = _.cloneDeep(undoStore.current.pop());
 
-        redoStore.unshift(undoStore.pop());
-        context.putImageData(undoStore[historyIndex], 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        redoStore.current.unshift(popUndoStore);
+
+        historyIndex.current -= 1;
+
+        const lastUndoStoreData = _.cloneDeep(
+          undoStore.current[historyIndex.current],
+        );
+
+        objects.current = lastUndoStoreData;
+
+        visualizer();
+
+        socketRef.current.emit("historyStore", {
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
     };
 
     const redo = () => {
-      if (redoStore.length > 0) {
-        historyIndex += 1;
+      if (redoStore.current.length > 0) {
+        const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
 
-        undoStore.push(redoStore.shift());
-        context.putImageData(undoStore[historyIndex], 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        undoStore.current.push(shiftRedoStore);
+
+        historyIndex.current += 1;
+
+        const lastUndoStoreData = _.cloneDeep(
+          undoStore.current[historyIndex.current],
+        );
+
+        objects.current = lastUndoStoreData;
+
+        visualizer();
+
+        socketRef.current.emit("historyStore", {
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
     };
 
     const clear = () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
 
-      undoStore = [];
-      objects.current = [];
-      historyIndex = -1;
+      undoStore.current.length = 0;
+      redoStore.current.length = 0;
+      objects.current.length = 0;
+      historyIndex.current = -1;
+
+      socketRef.current.emit("historyStore", {
+        undoStore: undoStore.current,
+        redoStore: redoStore.current,
+        historyIndex: historyIndex.current,
+      });
     };
 
     const onMouseDown = (event) => {
@@ -230,14 +298,23 @@ export default function Figure() {
       visualizer();
     };
 
-    const onMouseUp = () => {
-      objectActual.current = null;
+    const onMouseUp = (event) => {
+      if (objectActual.current !== null && event.type !== "mouseout") {
+        const currentObject = _.cloneDeep(objects.current);
 
-      if (event.type !== "mouseout") {
-        undoStore.push(context.getImageData(0, 0, canvas.width, canvas.height));
+        historyIndex.current += 1;
 
-        historyIndex += 1;
+        undoStore.current.push(currentObject);
+        redoStore.current.length = 0;
+
+        socketRef.current.emit("historyStore", {
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
       }
+
+      objectActual.current = null;
     };
 
     canvas.addEventListener("mousedown", onMouseDown, false);
@@ -250,9 +327,23 @@ export default function Figure() {
     undoElement.addEventListener("click", undo);
 
     return () => {
-      socketRef.current.disconnect();
+      socketRef.current.off();
     };
   }, []);
+
+  const inputUndo = (data) => {
+    const currentObject = _.cloneDeep(data);
+
+    historyIndex.current += 1;
+    undoStore.current.push(currentObject);
+    redoStore.current = [];
+
+    socketRef.current.emit("historyStore", {
+      undoStore: undoStore.current,
+      redoStore: redoStore.current,
+      historyIndex: historyIndex.current,
+    });
+  };
 
   return (
     <FigureContainer>
@@ -318,6 +409,7 @@ export default function Figure() {
                     color: "black",
                     type: "square",
                   });
+                  inputUndo(objects.current);
                 }}
               >
                 <span className="material-symbols-outlined">square</span>
@@ -332,6 +424,7 @@ export default function Figure() {
                     color: "black",
                     type: "circle",
                   });
+                  inputUndo(objects.current);
                 }}
               >
                 <span className="material-symbols-outlined">circle</span>
@@ -346,6 +439,7 @@ export default function Figure() {
                     color: "black",
                     type: "triangle",
                   });
+                  inputUndo(objects.current);
                 }}
               >
                 <span className="material-symbols-outlined">
