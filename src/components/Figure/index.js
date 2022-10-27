@@ -3,11 +3,13 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useSelector } from "react-redux";
+import getLocalIp from "../../utils/getLocalIp";
 
 export default function Figure() {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
+  const [localIp, setLocalIp] = useState("");
 
   const canvasRef = useRef(null);
   const initialPosition = useRef([0, 0]);
@@ -28,8 +30,10 @@ export default function Figure() {
 
     let scaleCount = 0;
 
+    getLocalIp(setLocalIp);
+
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
     );
 
     socketRef.current.on("drawing", (data) => {
@@ -186,10 +190,9 @@ export default function Figure() {
       if (historyIndex.current < 0) {
         window.alert("더이상 되돌아갈 작업이 없습니다.");
       } else if (historyIndex.current === 0) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
         const popUndoStore = _.cloneDeep(undoStore.current.pop());
 
+        context.clearRect(0, 0, canvas.width, canvas.height);
         redoStore.current.unshift(popUndoStore);
 
         objects.current.length = 0;
@@ -202,17 +205,17 @@ export default function Figure() {
 
         historyIndex.current = -1;
       } else {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        historyIndex.current -= 1;
-
         const popUndoStore = _.cloneDeep(undoStore.current.pop());
 
+        context.clearRect(0, 0, canvas.width, canvas.height);
         redoStore.current.unshift(popUndoStore);
+
+        historyIndex.current -= 1;
 
         const lastUndoStoreData = _.cloneDeep(
           undoStore.current[historyIndex.current],
         );
+
         objects.current = lastUndoStoreData;
 
         visualizer();
@@ -227,13 +230,12 @@ export default function Figure() {
 
     const redo = () => {
       if (redoStore.current.length > 0) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        historyIndex.current += 1;
-
         const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
 
+        context.clearRect(0, 0, canvas.width, canvas.height);
         undoStore.current.push(shiftRedoStore);
+
+        historyIndex.current += 1;
 
         const lastUndoStoreData = _.cloneDeep(
           undoStore.current[historyIndex.current],

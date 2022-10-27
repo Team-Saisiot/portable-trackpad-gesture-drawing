@@ -3,12 +3,14 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import { useDispatch, useSelector } from "react-redux";
 import { setLineColor, setLineWidth } from "../../store";
+import getLocalIp from "../../utils/getLocalIp";
 
 export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
+  const [localIp, setLocalIp] = useState("");
 
   const dispatch = useDispatch();
 
@@ -34,6 +36,8 @@ export default function Drawing() {
       color: lineColor,
       width: lineWidth,
     };
+
+    getLocalIp(setLocalIp);
 
     colorElement.addEventListener(
       "change",
@@ -249,7 +253,7 @@ export default function Drawing() {
     };
 
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
     );
 
     socketRef.current.on("drawing", onDrawingEvent);
