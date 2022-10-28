@@ -121,7 +121,7 @@ export default function Figure() {
       }
     });
 
-    socketRef.current.on("historyStore", (data) => {
+    socketRef.current.on("figureHistory", (data) => {
       undoStore.current = data.undoStore;
       redoStore.current = data.redoStore;
       historyIndex.current = data.historyIndex;
@@ -202,7 +202,7 @@ export default function Figure() {
 
         objects.current.length = 0;
 
-        socketRef.current.emit("historyStore", {
+        socketRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -225,7 +225,7 @@ export default function Figure() {
 
         visualizer();
 
-        socketRef.current.emit("historyStore", {
+        socketRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -250,7 +250,7 @@ export default function Figure() {
 
         visualizer();
 
-        socketRef.current.emit("historyStore", {
+        socketRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -266,7 +266,7 @@ export default function Figure() {
       objects.current.length = 0;
       historyIndex.current = -1;
 
-      socketRef.current.emit("historyStore", {
+      socketRef.current.emit("figureHistory", {
         undoStore: undoStore.current,
         redoStore: redoStore.current,
         historyIndex: historyIndex.current,
@@ -312,7 +312,7 @@ export default function Figure() {
         undoStore.current.push(currentObject);
         redoStore.current.length = 0;
 
-        socketRef.current.emit("historyStore", {
+        socketRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -343,7 +343,7 @@ export default function Figure() {
     undoStore.current.push(currentObject);
     redoStore.current = [];
 
-    socketRef.current.emit("historyStore", {
+    socketRef.current.emit("figureHistory", {
       undoStore: undoStore.current,
       redoStore: redoStore.current,
       historyIndex: historyIndex.current,
