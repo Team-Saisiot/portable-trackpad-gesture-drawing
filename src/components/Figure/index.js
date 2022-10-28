@@ -33,7 +33,7 @@ export default function Figure() {
     getLocalIp(setLocalIp);
 
     socketRef.current = io.connect(
-      `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `https://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
       {
         secure: true,
         reconnect: true,
