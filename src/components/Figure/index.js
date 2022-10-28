@@ -34,6 +34,11 @@ export default function Figure() {
 
     socketRef.current = io.connect(
       `http://${localIp}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      {
+        secure: true,
+        reconnect: true,
+        rejectUnauthorized: false,
+      },
     );
 
     socketRef.current.on("drawing", (data) => {
