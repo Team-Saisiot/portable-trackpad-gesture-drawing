@@ -3,13 +3,11 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useSelector } from "react-redux";
-import getLocalIp from "../../utils/getLocalIp";
 
 export default function Figure() {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
-  const [localIp, setLocalIp] = useState("");
 
   const canvasRef = useRef(null);
   const initialPosition = useRef([0, 0]);
@@ -29,8 +27,6 @@ export default function Figure() {
     const clearElement = document.querySelector(".figureClearButton");
 
     let scaleCount = 0;
-
-    getLocalIp(setLocalIp);
 
     socketRef.current = io.connect(
       `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,

@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import io from "socket.io-client";
+import _ from "lodash";
 import { useDispatch, useSelector } from "react-redux";
 import { setLineColor, setLineWidth } from "../../store";
-import getLocalIp from "../../utils/getLocalIp";
 
 export default function Drawing() {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
-  const [localIp, setLocalIp] = useState("");
 
   const dispatch = useDispatch();
 
@@ -37,8 +36,6 @@ export default function Drawing() {
       width: lineWidth,
     };
 
-    getLocalIp(setLocalIp);
-
     colorElement.addEventListener(
       "change",
       (event) => {
@@ -57,22 +54,34 @@ export default function Drawing() {
 
     const undo = () => {
       if (historyIndex.current < 0) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        undoStore.current.length = 0;
-        historyIndex.current = -1;
-      } else if (historyIndex.current === 0) {
         window.alert("더이상 되돌아갈 작업이 없습니다.");
-      } else {
+      } else if (historyIndex.current === 0) {
+        const popUndoStore = _.cloneDeep(undoStore.current.pop());
+
         context.clearRect(0, 0, canvas.width, canvas.height);
+        redoStore.current.unshift(popUndoStore);
+
+        lineObjects.current.length = 0;
+        historyIndex.current = -1;
+
+        socketRef.current.emit("drawingHistory", {
+          lineObjects: lineObjects.current,
+          undoStore: undoStore.current,
+          redoStore: redoStore.current,
+          historyIndex: historyIndex.current,
+        });
+      } else {
+        const popUndoStore = _.cloneDeep(undoStore.current.pop());
+
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        redoStore.current.unshift(popUndoStore);
 
         historyIndex.current -= 1;
+        lineObjects.current = _.cloneDeep(
+          undoStore.current[historyIndex.current],
+        );
 
-        redoStore.current.unshift(undoStore.current.pop());
-
-        lineObjects.current = undoStore.current[historyIndex.current];
-
-        visualizer(undoStore.current[historyIndex.current]);
+        visualizer(lineObjects.current);
 
         socketRef.current.emit("drawingHistory", {
           lineObjects: lineObjects.current,
@@ -85,13 +94,15 @@ export default function Drawing() {
 
     const redo = () => {
       if (redoStore.current.length > 0) {
+        const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
+
         context.clearRect(0, 0, canvas.width, canvas.height);
+        undoStore.current.push(shiftRedoStore);
 
         historyIndex.current += 1;
-
-        undoStore.current.push(redoStore.current.shift());
-
-        lineObjects.current = undoStore.current[historyIndex.current];
+        lineObjects.current = _.cloneDeep(
+          undoStore.current[historyIndex.current],
+        );
 
         visualizer(undoStore.current[historyIndex.current]);
 
@@ -204,8 +215,8 @@ export default function Drawing() {
         historyIndex.current += 1;
         redoStore.current.length = 0;
 
-        lineObjects.current.push([...linePath.current]);
-        undoStore.current.push([...lineObjects.current]);
+        lineObjects.current.push(_.cloneDeep(linePath.current));
+        undoStore.current.push(_.cloneDeep(lineObjects.current));
 
         socketRef.current.emit("drawingHistory", {
           lineObjects: lineObjects.current,
@@ -269,7 +280,6 @@ export default function Drawing() {
       historyIndex.current = data.historyIndex;
 
       context.clearRect(0, 0, canvas.width, canvas.height);
-
       visualizer([...data.lineObjects]);
     });
 
