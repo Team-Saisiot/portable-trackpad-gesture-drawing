@@ -253,7 +253,7 @@ export default function Drawing() {
     };
 
     socketRef.current = io.connect(
-      `https://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
+      `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
       {
         secure: true,
         reconnect: true,
