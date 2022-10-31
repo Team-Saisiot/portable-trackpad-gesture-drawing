@@ -14,7 +14,8 @@ export default function Figure() {
   const objects = useRef([]);
   const objectActualIndex = useRef(null);
   const objectActual = useRef({});
-  const socketRef = useRef(null);
+  const socketServerRef = useRef(null);
+  const socketPackRef = useRef(null);
   const undoStore = useRef([]);
   const redoStore = useRef([]);
   const historyIndex = useRef(-1);
@@ -28,7 +29,16 @@ export default function Figure() {
 
     let scaleCount = 0;
 
-    socketRef.current = io.connect(
+    socketServerRef.current = io.connect(
+      `http://${process.env.REACT_APP_SERVER_IPADDRESS}:${process.env.REACT_APP_SERVER_PORT}`,
+      {
+        secure: true,
+        reconnect: true,
+        rejectUnauthorized: false,
+      },
+    );
+
+    socketPackRef.current = io.connect(
       `http://${process.env.REACT_APP_PACKAGE_IPADDRESS}:${process.env.REACT_APP_PACKAGE_PORT}`,
       {
         secure: true,
@@ -37,12 +47,14 @@ export default function Figure() {
       },
     );
 
-    socketRef.current.on("drawing", (data) => {
-      if (Array.isArray(data) && typeof data[0] !== "string") {
-        objects.current = data;
+    socketServerRef.current.on("figure", (data) => {
+      objects.current = data;
 
-        visualizer();
-      } else if (data === "triangle") {
+      visualizer();
+    });
+
+    socketPackRef.current.on("drawingGesture", (data) => {
+      if (data === "triangle") {
         objects.current.push({
           x: 250,
           y: 300,
@@ -117,7 +129,7 @@ export default function Figure() {
       }
     });
 
-    socketRef.current.on("figureHistory", (data) => {
+    socketServerRef.current.on("figureHistory", (data) => {
       undoStore.current = data.undoStore;
       redoStore.current = data.redoStore;
       historyIndex.current = data.historyIndex;
@@ -198,7 +210,7 @@ export default function Figure() {
 
         objects.current.length = 0;
 
-        socketRef.current.emit("figureHistory", {
+        socketServerRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -221,7 +233,7 @@ export default function Figure() {
 
         visualizer();
 
-        socketRef.current.emit("figureHistory", {
+        socketServerRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -246,7 +258,7 @@ export default function Figure() {
 
         visualizer();
 
-        socketRef.current.emit("figureHistory", {
+        socketServerRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -262,7 +274,7 @@ export default function Figure() {
       objects.current.length = 0;
       historyIndex.current = -1;
 
-      socketRef.current.emit("figureHistory", {
+      socketServerRef.current.emit("figureHistory", {
         undoStore: undoStore.current,
         redoStore: redoStore.current,
         historyIndex: historyIndex.current,
@@ -294,7 +306,7 @@ export default function Figure() {
         objectActual.current.y = event.clientY - initialPosition.current[1];
       }
 
-      socketRef.current.emit("drawing", objects.current);
+      socketServerRef.current.emit("figure", objects.current);
 
       visualizer();
     };
@@ -308,7 +320,7 @@ export default function Figure() {
         undoStore.current.push(currentObject);
         redoStore.current.length = 0;
 
-        socketRef.current.emit("figureHistory", {
+        socketServerRef.current.emit("figureHistory", {
           undoStore: undoStore.current,
           redoStore: redoStore.current,
           historyIndex: historyIndex.current,
@@ -328,7 +340,8 @@ export default function Figure() {
     undoElement.addEventListener("click", undo);
 
     return () => {
-      socketRef.current.off();
+      socketServerRef.current.off();
+      socketPackRef.current.off();
     };
   }, []);
 
@@ -339,7 +352,7 @@ export default function Figure() {
     undoStore.current.push(currentObject);
     redoStore.current = [];
 
-    socketRef.current.emit("figureHistory", {
+    socketServerRef.current.emit("figureHistory", {
       undoStore: undoStore.current,
       redoStore: redoStore.current,
       historyIndex: historyIndex.current,
@@ -353,6 +366,7 @@ export default function Figure() {
         className="figure-floatingBox"
         style={{
           zIndex: selectedTool === "figure" ? 1 : -1,
+          display: selectedTool === "figure" ? "flex" : "none",
         }}
       >
         <div
@@ -361,7 +375,7 @@ export default function Figure() {
             transform: !isModalShow
               ? ["translateX(100vmin)"]
               : ["translateX(0)"],
-            display: selectedTool === "figure" ? "flex" : "none",
+            display: isModalShow ? "flex" : "none",
           }}
         >
           <h1>Figure</h1>
