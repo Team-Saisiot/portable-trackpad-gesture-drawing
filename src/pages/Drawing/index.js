@@ -3,7 +3,7 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useDispatch, useSelector } from "react-redux";
-import { setLineColor, setLineWidth } from "../../store";
+import { setLineColor, setLineWidth } from "../../redux/reducers/lineStyle";
 import { undo, redo, clear } from "../../utils/history";
 import { drawLineWithEmit, drawLineWithoutEmit } from "../../utils/drawLine";
 import { drawingVisualizer } from "../../utils/drawingVisualizer";
