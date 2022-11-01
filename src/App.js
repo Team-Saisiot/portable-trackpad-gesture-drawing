@@ -1,5 +1,5 @@
 import React from "react";
-import MainCanvas from "./components/MainCanvas";
+import MainCanvas from "./pages/MainCanvas";
 import SideBar from "./components/Sidebar";
 
 const App = () => {

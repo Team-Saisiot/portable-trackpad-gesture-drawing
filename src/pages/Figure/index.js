@@ -4,7 +4,7 @@ import io from "socket.io-client";
 import _ from "lodash";
 import { useSelector } from "react-redux";
 
-export default function Figure() {
+const Figure = () => {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
@@ -504,7 +504,7 @@ export default function Figure() {
       </div>
     </FigureContainer>
   );
-}
+};
 
 const FigureContainer = styled.div`
   canvas {
@@ -681,3 +681,5 @@ const FigureContainer = styled.div`
     }
   }
 `;
+
+export default Figure;

@@ -3,14 +3,14 @@ import styled from "styled-components";
 import Drawing from "../Drawing";
 import Figure from "../Figure";
 
-export default function MainCanvas() {
+const MainCanvas = () => {
   return (
     <MainCanvasContainer>
       <Drawing />
       <Figure />
     </MainCanvasContainer>
   );
-}
+};
 
 const MainCanvasContainer = styled.div`
   position: fixed;
@@ -24,3 +24,5 @@ const MainCanvasContainer = styled.div`
   width: 80vw;
   background-color: transparent;
 `;
+
+export default MainCanvas;

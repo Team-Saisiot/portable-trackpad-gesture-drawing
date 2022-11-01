@@ -5,7 +5,7 @@ import _ from "lodash";
 import { useDispatch, useSelector } from "react-redux";
 import { setLineColor, setLineWidth } from "../../store";
 
-export default function Drawing() {
+const Drawing = () => {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
@@ -377,7 +377,7 @@ export default function Drawing() {
       </div>
     </DrawingContainer>
   );
-}
+};
 
 const DrawingContainer = styled.div`
   canvas {
@@ -493,3 +493,5 @@ const DrawingContainer = styled.div`
     }
   }
 `;
+
+export default Drawing;
