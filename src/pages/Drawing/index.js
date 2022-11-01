@@ -4,6 +4,9 @@ import io from "socket.io-client";
 import _ from "lodash";
 import { useDispatch, useSelector } from "react-redux";
 import { setLineColor, setLineWidth } from "../../store";
+import { undo, redo, clear } from "../../utils/history";
+import { drawLineWithEmit, drawLineWithoutEmit } from "../../utils/drawLine";
+import { drawingVisualizer } from "../../utils/drawingVisualizer";
 
 const Drawing = () => {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
@@ -52,121 +55,6 @@ const Drawing = () => {
       false,
     );
 
-    const undo = () => {
-      if (historyIndex.current < 0) {
-        window.alert("더이상 되돌아갈 작업이 없습니다.");
-      } else if (historyIndex.current === 0) {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        lineObjects.current.length = 0;
-        historyIndex.current = -1;
-
-        socketRef.current.emit("drawingHistory", {
-          lineObjects: lineObjects.current,
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      } else {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        historyIndex.current -= 1;
-        lineObjects.current = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        visualizer(lineObjects.current);
-
-        socketRef.current.emit("drawingHistory", {
-          lineObjects: lineObjects.current,
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const redo = () => {
-      if (redoStore.current.length > 0) {
-        const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        undoStore.current.push(shiftRedoStore);
-
-        historyIndex.current += 1;
-        lineObjects.current = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        visualizer(undoStore.current[historyIndex.current]);
-
-        socketRef.current.emit("drawingHistory", {
-          lineObjects: lineObjects.current,
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const clear = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      undoStore.current.length = 0;
-      redoStore.current.length = 0;
-      historyIndex.current = -1;
-      lineObjects.current = [];
-
-      socketRef.current.emit("drawingHistory", {
-        lineObjects: [],
-        undoStore: [],
-        redoStore: [],
-        historyIndex: -1,
-      });
-    };
-
-    const drawLine = (startPosition, endPosition, color, width, emit) => {
-      context.beginPath();
-      context.moveTo(...startPosition);
-      context.lineTo(...endPosition);
-      context.strokeStyle = color;
-      context.lineWidth = width;
-      context.lineCap = "round";
-      context.stroke();
-      context.closePath();
-
-      if (!emit) {
-        return;
-      }
-
-      socketRef.current.emit("drawing", {
-        startPosition: [
-          startPosition[0] / canvas.width,
-          startPosition[1] / canvas.height,
-        ],
-        endPosition: [
-          endPosition[0] / canvas.width,
-          endPosition[1] / canvas.height,
-        ],
-        color,
-        width,
-      });
-    };
-
-    const visualizer = (path) => {
-      for (let i = 0; i < path.length; i++) {
-        for (let j = 0; j < path[i].length; j++) {
-          drawLine(...path[i][j]);
-        }
-      }
-    };
-
     const onMouseDown = (event) => {
       drawing = true;
       currentStyle.startPosition = [event.clientX, event.clientY];
@@ -177,12 +65,14 @@ const Drawing = () => {
         return;
       }
 
-      drawLine(
+      drawLineWithEmit(
+        context,
+        canvas,
+        socketRef,
         currentStyle.startPosition,
         [event.clientX, event.clientY],
         currentStyle.color,
         currentStyle.width,
-        true,
       );
 
       linePath.current.push([
@@ -190,7 +80,6 @@ const Drawing = () => {
         [event.clientX, event.clientY],
         currentStyle.color,
         currentStyle.width,
-        true,
       ]);
 
       currentStyle.startPosition = [event.clientX, event.clientY];
@@ -203,12 +92,14 @@ const Drawing = () => {
 
       drawing = false;
 
-      drawLine(
+      drawLineWithEmit(
+        context,
+        canvas,
+        socketRef,
         currentStyle.startPosition,
         [event.clientX, event.clientY],
         currentStyle.color,
         currentStyle.width,
-        true,
       );
 
       if (event.type !== "mouseout") {
@@ -234,9 +125,42 @@ const Drawing = () => {
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
 
-    clearElement.addEventListener("click", clear);
-    redoElement.addEventListener("click", redo);
-    undoElement.addEventListener("click", undo);
+    clearElement.addEventListener("click", () => {
+      clear(
+        "drawing",
+        context,
+        canvas,
+        socketRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        lineObjects,
+      );
+    });
+    redoElement.addEventListener("click", () => {
+      redo(
+        "drawing",
+        context,
+        canvas,
+        socketRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        lineObjects,
+      );
+    });
+    undoElement.addEventListener("click", () => {
+      undo(
+        "drawing",
+        context,
+        canvas,
+        socketRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        lineObjects,
+      );
+    });
 
     const onResize = () => {
       canvas.width = 2560;
@@ -248,7 +172,8 @@ const Drawing = () => {
 
     const onDrawingEvent = (data) => {
       if (data.startPosition) {
-        drawLine(
+        drawLineWithoutEmit(
+          context,
           [
             data.startPosition[0] * canvas.width,
             data.startPosition[1] * canvas.height,
@@ -280,7 +205,7 @@ const Drawing = () => {
       historyIndex.current = data.historyIndex;
 
       context.clearRect(0, 0, canvas.width, canvas.height);
-      visualizer([...data.lineObjects]);
+      drawingVisualizer(context, [...data.lineObjects]);
     });
 
     return () => {

@@ -3,6 +3,8 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useSelector } from "react-redux";
+import { undo, redo, clear } from "../../utils/history";
+import { figureVisualizer } from "../../utils/figureVisualizer";
 
 const Figure = () => {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
@@ -50,7 +52,7 @@ const Figure = () => {
     socketServerRef.current.on("figure", (data) => {
       objects.current = data;
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     });
 
     socketPackRef.current.on("drawingGesture", (data) => {
@@ -64,7 +66,7 @@ const Figure = () => {
           type: "triangle",
         });
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "circle") {
         objects.current.push({
           x: 320,
@@ -75,7 +77,7 @@ const Figure = () => {
           type: "circle",
         });
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "square") {
         objects.current.push({
           x: 320,
@@ -86,7 +88,7 @@ const Figure = () => {
           type: "square",
         });
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "scaleUp") {
         scaleCount++;
         const selectedFigure = objects.current[objectActualIndex.current];
@@ -103,7 +105,7 @@ const Figure = () => {
           scaleCount = 0;
         }
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "scaleDown") {
         const selectedFigure = objects.current[objectActualIndex.current];
 
@@ -125,7 +127,7 @@ const Figure = () => {
           scaleCount = 0;
         }
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       }
     });
 
@@ -140,7 +142,7 @@ const Figure = () => {
 
       objects.current = currentObject;
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     });
 
     const onResize = () => {
@@ -150,136 +152,7 @@ const Figure = () => {
 
     window.addEventListener("resize", onResize, false);
     onResize();
-
-    const visualizer = () => {
-      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      context.beginPath();
-
-      for (let i = 0; i < objects.current.length; i++) {
-        if (objects.current[i].type === "square") {
-          context.fillStyle = objects.current[i].color;
-          context.fillRect(
-            objects.current[i].x,
-            objects.current[i].y,
-            objects.current[i].width,
-            objects.current[i].height,
-          );
-        } else if (objects.current[i].type === "circle") {
-          context.beginPath();
-          context.arc(
-            objects.current[i].x,
-            objects.current[i].y,
-            objects.current[i].height / 2,
-            0,
-            2 * Math.PI,
-          );
-
-          context.stroke();
-          context.fillStyle = objects.current[i].color;
-          context.fill();
-        } else if (objects.current[i].type === "triangle") {
-          context.beginPath();
-          context.moveTo(objects.current[i].x, objects.current[i].y);
-          context.lineTo(
-            objects.current[i].x + objects.current[i].width / 2,
-            objects.current[i].y - objects.current[i].height,
-          );
-
-          context.lineTo(
-            objects.current[i].x + objects.current[i].width,
-            objects.current[i].y,
-          );
-
-          context.closePath();
-          context.fillStyle = objects.current[i].color;
-          context.fill();
-        }
-      }
-    };
-
-    visualizer();
-
-    const undo = () => {
-      if (historyIndex.current < 0) {
-        window.alert("더이상 되돌아갈 작업이 없습니다.");
-      } else if (historyIndex.current === 0) {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        objects.current.length = 0;
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-
-        historyIndex.current = -1;
-      } else {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        historyIndex.current -= 1;
-
-        const lastUndoStoreData = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        objects.current = lastUndoStoreData;
-
-        visualizer();
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const redo = () => {
-      if (redoStore.current.length > 0) {
-        const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        undoStore.current.push(shiftRedoStore);
-
-        historyIndex.current += 1;
-
-        const lastUndoStoreData = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        objects.current = lastUndoStoreData;
-
-        visualizer();
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const clear = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      undoStore.current.length = 0;
-      redoStore.current.length = 0;
-      objects.current.length = 0;
-      historyIndex.current = -1;
-
-      socketServerRef.current.emit("figureHistory", {
-        undoStore: undoStore.current,
-        redoStore: redoStore.current,
-        historyIndex: historyIndex.current,
-      });
-    };
+    figureVisualizer(context, objects.current);
 
     const onMouseDown = (event) => {
       for (let i = 0; i < objects.current.length; i++) {
@@ -308,7 +181,7 @@ const Figure = () => {
 
       socketServerRef.current.emit("figure", objects.current);
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     };
 
     const onMouseUp = (event) => {
@@ -335,9 +208,42 @@ const Figure = () => {
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
 
-    clearElement.addEventListener("click", clear);
-    redoElement.addEventListener("click", redo);
-    undoElement.addEventListener("click", undo);
+    clearElement.addEventListener("click", () => {
+      clear(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
+    redoElement.addEventListener("click", () => {
+      redo(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
+    undoElement.addEventListener("click", () => {
+      undo(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
 
     return () => {
       socketServerRef.current.off();
