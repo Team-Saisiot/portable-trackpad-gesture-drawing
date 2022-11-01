@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const isFoldSideBar = createSlice({
+export const isFoldSideBar = createSlice({
   name: "isFoldSideBar",
   initialState: { isFoldSideBar: false },
   reducers: {

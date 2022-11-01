@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const selectedTool = createSlice({
+export const selectedTool = createSlice({
   name: "selectedTool",
   initialState: { selectedTool: "drawing" },
   reducers: {

@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const lineStyle = createSlice({
+export const lineStyle = createSlice({
   name: "lineStyle",
   initialState: {
     lineColor: "black",
