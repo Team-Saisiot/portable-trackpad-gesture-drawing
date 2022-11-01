@@ -3,7 +3,7 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useDispatch, useSelector } from "react-redux";
-import { setLineColor, setLineWidth } from "../../redux/reducers/lineStyle";
+import { setLineColor, setLineWidth } from "../../store";
 import { undo, redo, clear } from "../../utils/history";
 import { drawLineWithEmit, drawLineWithoutEmit } from "../../utils/drawLine";
 import { drawingVisualizer } from "../../utils/drawingVisualizer";
@@ -189,7 +189,7 @@ const Drawing = () => {
     };
 
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_SERVER_IPADDRESS}:${process.env.REACT_APP_SERVER_PORT}`,
+      `${process.env.REACT_APP_SERVER_IPADDRESS}`,
       {
         secure: true,
         reconnect: true,
