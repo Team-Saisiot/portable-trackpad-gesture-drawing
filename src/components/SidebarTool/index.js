@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { setSelectedTool } from "../../store";
 import capitalizeFirstLetter from "../../utils/capitalizeFirstLetter";
 
-export default function SideBarTool({ tool }) {
+const SideBarTool = ({ tool }) => {
   const { isFoldSideBar } = useSelector(({ isFoldSideBar }) => isFoldSideBar);
   const dispatch = useDispatch();
 
@@ -31,7 +31,7 @@ export default function SideBarTool({ tool }) {
       </div>
     </SideBarToolContainer>
   );
-}
+};
 
 const SideBarToolContainer = styled.div`
   display: flex;
@@ -72,3 +72,5 @@ const SideBarToolContainer = styled.div`
     }
   }
 `;
+
+export default SideBarTool;

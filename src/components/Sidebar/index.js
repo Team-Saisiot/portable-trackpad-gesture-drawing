@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { setIsFoldSideBar } from "../../store";
 import SideBarTool from "../SidebarTool";
 
-export default function SideBar() {
+const SideBar = () => {
   const { isFoldSideBar } = useSelector(({ isFoldSideBar }) => isFoldSideBar);
 
   const dispatch = useDispatch();
@@ -57,7 +57,7 @@ export default function SideBar() {
       })}
     </SideBarContainer>
   );
-}
+};
 
 const SideBarContainer = styled.div`
   position: fixed;
@@ -124,3 +124,5 @@ const SideBarContainer = styled.div`
     }
   }
 `;
+
+export default SideBar;

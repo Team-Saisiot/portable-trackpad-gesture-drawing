@@ -14,7 +14,7 @@ const GlobalStyle = createGlobalStyle`
     font-weight: normal;
     font-style: normal;
 }
-  
+
   * {
     box-sizing : border-box;
     margin: 0;
@@ -22,7 +22,7 @@ const GlobalStyle = createGlobalStyle`
     font-family: 'GmarketSansMedium';
     color: #333;
   }
-  
+
   body{
     font-family: 'Noto Sans KR', sans-serif;
   }
