@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
-import { useDispatch, useSelector } from "react-redux";
-import { setLineColor, setLineWidth } from "../../redux/reducers/lineStyle";
+import { useSelector } from "react-redux";
 import { undo, redo, clear } from "../../utils/history";
 import { drawLineWithEmit, drawLineWithoutEmit } from "../../utils/drawLine";
 import { drawingVisualizer } from "../../utils/drawingVisualizer";
@@ -16,8 +15,6 @@ const Drawing = () => {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
-
-  const dispatch = useDispatch();
 
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
