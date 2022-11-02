@@ -19,6 +19,7 @@ const SideBar = () => {
       style={{
         transform: isFoldSideBar ? ["translateX(-10vmin)"] : ["translateX(0)"],
       }}
+      data-testid="SideBarContainer"
     >
       <div className="sidebar-title">
         <span
@@ -28,6 +29,7 @@ const SideBar = () => {
               ? ["translateX(10vmin)"]
               : ["translateX(0)"],
           }}
+          data-testid="sidebar-title"
         >
           GD
         </span>
@@ -35,6 +37,7 @@ const SideBar = () => {
           style={{
             opacity: isFoldSideBar ? 0 : 1,
           }}
+          data-testid="sidebar-title-div"
         >
           <h5>Gesture</h5>
           <h5>Drawing</h5>
