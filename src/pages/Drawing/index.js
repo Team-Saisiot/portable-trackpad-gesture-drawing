@@ -2,19 +2,19 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
-import { useDispatch, useSelector } from "react-redux";
-import { setLineColor, setLineWidth } from "../../redux/reducers/lineStyle";
+import { useSelector } from "react-redux";
 import { undo, redo, clear } from "../../utils/history";
 import { drawLineWithEmit, drawLineWithoutEmit } from "../../utils/drawLine";
 import { drawingVisualizer } from "../../utils/drawingVisualizer";
+import DrawingColorTool from "../../components/DrawingColorTool";
+import DrawingWidthTool from "../../components/DrawingWidthTool";
+import DrawingHistoryButton from "../../components/DrawingHistoryButton";
 
 const Drawing = () => {
   const { lineColor, lineWidth } = useSelector(({ lineStyle }) => lineStyle);
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
 
   const [isModalShow, setIsModalShow] = useState(false);
-
-  const dispatch = useDispatch();
 
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
@@ -238,43 +238,10 @@ const Drawing = () => {
         >
           <h1>Drawing</h1>
           <div className="drawing-toolBox">
-            <div className="drawing-tool">
-              <p>선 색상변경</p>
-              <input
-                type="color"
-                className="colorChange"
-                onChange={(event) => {
-                  dispatch(setLineColor(event.target.value));
-                }}
-              />
-              <h5>{lineColor}</h5>
-            </div>
-            <div className="drawing-tool">
-              <p>선 굵기</p>
-              <input
-                type="range"
-                min="1"
-                max="200"
-                defaultValue="5"
-                className="widthChange"
-                onChange={(event) => {
-                  dispatch(setLineWidth(event.target.value));
-                }}
-              />
-              <h5>{lineWidth}</h5>
-            </div>
+            <DrawingColorTool />
+            <DrawingWidthTool />
           </div>
-          <div>
-            <button className="drawingUndoButton drawing-historyButton">
-              undo
-            </button>
-            <button className="drawingRedoButton drawing-historyButton">
-              redo
-            </button>
-            <button className="drawingClearButton drawing-historyButton">
-              clear
-            </button>
-          </div>
+          <DrawingHistoryButton />
           <div
             onClick={() => {
               setIsModalShow(false);

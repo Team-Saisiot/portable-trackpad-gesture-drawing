@@ -5,6 +5,12 @@ import _ from "lodash";
 import { useSelector } from "react-redux";
 import { undo, redo, clear } from "../../utils/history";
 import { figureVisualizer } from "../../utils/figureVisualizer";
+import NEW_FIGURES from "../../constants/NEW_FIGURES";
+import FigureTool from "../../components/FigureHeightTool";
+import FigureWidthTool from "../../components/FigureWidthTool";
+import FigureColorTool from "../../components/FigureColorTool";
+import AddFigureButton from "../../components/AddFigureButton";
+import FigureHistoryButton from "../../components/FigureHistoryButton";
 
 const Figure = () => {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
@@ -21,33 +27,6 @@ const Figure = () => {
   const undoStore = useRef([]);
   const redoStore = useRef([]);
   const historyIndex = useRef(-1);
-
-  const newFigures = {
-    square: {
-      x: 400,
-      y: 400,
-      width: 50,
-      height: 50,
-      color: "black",
-      type: "square",
-    },
-    circle: {
-      x: 400,
-      y: 400,
-      width: 50,
-      height: 50,
-      color: "black",
-      type: "circle",
-    },
-    triangle: {
-      x: 400,
-      y: 400,
-      width: 50,
-      height: (Math.sqrt(3) / 2) * 50,
-      color: "black",
-      type: "triangle",
-    },
-  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,15 +63,15 @@ const Figure = () => {
 
     socketPackRef.current.on("drawingGesture", (data) => {
       if (data === "triangle") {
-        objects.current.push(newFigures.triangle);
+        objects.current.push(NEW_FIGURES.TRIANGLE);
 
         figureVisualizer(context, objects.current);
       } else if (data === "circle") {
-        objects.current.push(newFigures.circle);
+        objects.current.push(NEW_FIGURES.CIRCLE);
 
         figureVisualizer(context, objects.current);
       } else if (data === "square") {
-        objects.current.push(newFigures.square);
+        objects.current.push(NEW_FIGURES.SQUARE);
 
         figureVisualizer(context, objects.current);
       } else if (data === "scaleUp") {
@@ -323,104 +302,27 @@ const Figure = () => {
           <h1>Figure</h1>
           <div className="figure-toolBox">
             <div className="controlBox">
-              <div>
-                <h4>높이</h4>
-                <input
-                  onChange={(event) => {
-                    const selectedFigure =
-                      objects.current[objectActualIndex.current];
-
-                    if (selectedFigure.type === "circle") {
-                      selectedFigure.height = event.target.value;
-                      selectedFigure.width = event.target.value;
-                    } else if (selectedFigure.type === "triangle") {
-                      selectedFigure.height =
-                        (Math.sqrt(3) / 2) * event.target.value;
-                    } else {
-                      selectedFigure.height = event.target.value;
-                    }
-                  }}
-                />
-              </div>
-              <div>
-                <h4>폭</h4>
-                <input
-                  onChange={(event) => {
-                    const selectedFigure =
-                      objects.current[objectActualIndex.current];
-
-                    if (selectedFigure.type === "circle") {
-                      selectedFigure.height = event.target.value;
-                      selectedFigure.width = event.target.value;
-                    } else if (selectedFigure.type === "triangle") {
-                      selectedFigure.width =
-                        (Math.sqrt(3) / 2) * event.target.value;
-                    } else {
-                      selectedFigure.width = event.target.value;
-                    }
-                  }}
-                />
-              </div>
-              <div>
-                <h4>색상</h4>
-                <input
-                  type="color"
-                  onChange={(event) => {
-                    objects.current[objectActualIndex.current].color =
-                      event.target.value;
-                  }}
-                />
-              </div>
+              <FigureTool ref={{ objects, objectActualIndex }} />
+              <FigureWidthTool ref={{ objects, objectActualIndex }} />
+              <FigureColorTool ref={{ objects, objectActualIndex }} />
             </div>
           </div>
           <div className="buttonBox">
             <h4>도형 추가</h4>
             <div>
-              <button
-                onClick={() => {
-                  objects.current.push(newFigures.square);
-
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">square</span>
-              </button>
-              <button
-                onClick={() => {
-                  objects.current.push(newFigures.circle);
-
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">circle</span>
-              </button>
-              <button
-                onClick={() => {
-                  objects.current.push(newFigures.triangle);
-
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">
-                  change_history
-                </span>
-              </button>
+              {["square", "circle", "triangle"].map((value, index) => {
+                return (
+                  <AddFigureButton
+                    inputUndo={inputUndo}
+                    type={value}
+                    ref={{ objects }}
+                    key={index}
+                  />
+                );
+              })}
             </div>
           </div>
-          <div className="figure-historyBox">
-            <h4>히스토리</h4>
-            <div>
-              <button className="figureUndoButton figure-historyButton">
-                undo
-              </button>
-              <button className="figureRedoButton figure-historyButton">
-                redo
-              </button>
-              <button className="figureClearButton figure-historyButton">
-                clear
-              </button>
-            </div>
-          </div>
+          <FigureHistoryButton />
           <div
             onClick={() => {
               setIsModalShow(false);
@@ -585,24 +487,10 @@ const FigureContainer = styled.div`
     flex-direction: column;
     margin-top: 2vh;
 
-    button {
-      margin: 0 0.5vmin;
-      padding: 1vmin 1.4vmin;
-      color: #777;
-      font-size: 1.5vmin;
-      border: none;
-      border-radius: 1.5vmin;
-      user-select: none;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-
-      :hover {
-        background-color: hsl(0, 0%, 80%);
-      }
-
-      :active {
-        background-color: hsl(0, 0%, 60%);
-      }
+    div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
   }
 
