@@ -47,9 +47,9 @@ const SideBar = () => {
         }}
       >
         {isFoldSideBar ? (
-          <span className="material-symbols-outlined">navigate_before</span>
-        ) : (
           <span className="material-symbols-outlined">navigate_next</span>
+        ) : (
+          <span className="material-symbols-outlined">navigate_before</span>
         )}
       </div>
       {tools.map((value, index) => {

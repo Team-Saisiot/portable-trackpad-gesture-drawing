@@ -6,6 +6,7 @@ import capitalizeFirstLetter from "../../utils/capitalizeFirstLetter";
 
 const SideBarTool = ({ tool }) => {
   const { isFoldSideBar } = useSelector(({ isFoldSideBar }) => isFoldSideBar);
+
   const dispatch = useDispatch();
 
   return (
