@@ -189,7 +189,7 @@ const Drawing = () => {
     };
 
     socketRef.current = io.connect(
-      `http://${process.env.REACT_APP_SERVER_IPADDRESS}:${process.env.REACT_APP_SERVER_PORT}`,
+      `${process.env.REACT_APP_SERVER_IPADDRESS}`,
       {
         secure: true,
         reconnect: true,

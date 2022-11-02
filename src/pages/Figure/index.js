@@ -22,6 +22,33 @@ const Figure = () => {
   const redoStore = useRef([]);
   const historyIndex = useRef(-1);
 
+  const newFigures = {
+    square: {
+      x: 400,
+      y: 400,
+      width: 50,
+      height: 50,
+      color: "black",
+      type: "square",
+    },
+    circle: {
+      x: 400,
+      y: 400,
+      width: 50,
+      height: 50,
+      color: "black",
+      type: "circle",
+    },
+    triangle: {
+      x: 400,
+      y: 400,
+      width: 50,
+      height: (Math.sqrt(3) / 2) * 50,
+      color: "black",
+      type: "triangle",
+    },
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -32,7 +59,7 @@ const Figure = () => {
     let scaleCount = 0;
 
     socketServerRef.current = io.connect(
-      `http://${process.env.REACT_APP_SERVER_IPADDRESS}:${process.env.REACT_APP_SERVER_PORT}`,
+      `${process.env.REACT_APP_SERVER_IPADDRESS}`,
       {
         secure: true,
         reconnect: true,
@@ -57,41 +84,21 @@ const Figure = () => {
 
     socketPackRef.current.on("drawingGesture", (data) => {
       if (data === "triangle") {
-        objects.current.push({
-          x: 250,
-          y: 300,
-          width: 50,
-          height: (Math.sqrt(3) / 2) * 50,
-          color: "black",
-          type: "triangle",
-        });
+        objects.current.push(newFigures.triangle);
 
         figureVisualizer(context, objects.current);
       } else if (data === "circle") {
-        objects.current.push({
-          x: 320,
-          y: 250,
-          width: 50,
-          height: 50,
-          color: "black",
-          type: "circle",
-        });
+        objects.current.push(newFigures.circle);
 
         figureVisualizer(context, objects.current);
       } else if (data === "square") {
-        objects.current.push({
-          x: 320,
-          y: 250,
-          width: 50,
-          height: 50,
-          color: "black",
-          type: "square",
-        });
+        objects.current.push(newFigures.square);
 
         figureVisualizer(context, objects.current);
       } else if (data === "scaleUp") {
-        scaleCount++;
         const selectedFigure = objects.current[objectActualIndex.current];
+
+        scaleCount++;
 
         if (scaleCount === 2) {
           if (selectedFigure.type === "triangle") {
@@ -157,13 +164,32 @@ const Figure = () => {
     const onMouseDown = (event) => {
       for (let i = 0; i < objects.current.length; i++) {
         const { x, y, height, width } = objects.current[i];
-
-        if (
+        const identifySquare =
           x < event.clientX &&
           width + x > event.clientX &&
           y < event.clientY &&
-          height + y > event.clientY
-        ) {
+          height + y > event.clientY;
+
+        const identifyCircle =
+          x - width / 2 < event.clientX &&
+          width / 2 + x > event.clientX &&
+          y - height / 2 < event.clientY &&
+          height / 2 + y > event.clientY;
+
+        const identifyTriangle =
+          x < event.clientX &&
+          width + x > event.clientX &&
+          y > event.clientY &&
+          height + y > event.clientY;
+
+        const identifyPoint =
+          objects.current[i].type === "circle"
+            ? identifyCircle
+            : objects.current[i].type === "square"
+            ? identifySquare
+            : identifyTriangle;
+
+        if (identifyPoint) {
           objectActualIndex.current = i;
           objectActual.current = objects.current[i];
           initialPosition.current = [event.clientX - x, event.clientY - y];
@@ -208,6 +234,14 @@ const Figure = () => {
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
 
+    window.addEventListener("click", () => {
+      figureVisualizer(context, objects.current);
+    });
+
+    window.addEventListener("keyup", () => {
+      figureVisualizer(context, objects.current);
+    });
+
     clearElement.addEventListener("click", () => {
       clear(
         "figure",
@@ -220,6 +254,7 @@ const Figure = () => {
         objects,
       );
     });
+
     redoElement.addEventListener("click", () => {
       redo(
         "figure",
@@ -232,6 +267,7 @@ const Figure = () => {
         objects,
       );
     });
+
     undoElement.addEventListener("click", () => {
       undo(
         "figure",
@@ -291,8 +327,18 @@ const Figure = () => {
                 <h4>높이</h4>
                 <input
                   onChange={(event) => {
-                    objects.current[objectActualIndex.current].height =
-                      event.target.value;
+                    const selectedFigure =
+                      objects.current[objectActualIndex.current];
+
+                    if (selectedFigure.type === "circle") {
+                      selectedFigure.height = event.target.value;
+                      selectedFigure.width = event.target.value;
+                    } else if (selectedFigure.type === "triangle") {
+                      selectedFigure.height =
+                        (Math.sqrt(3) / 2) * event.target.value;
+                    } else {
+                      selectedFigure.height = event.target.value;
+                    }
                   }}
                 />
               </div>
@@ -300,8 +346,18 @@ const Figure = () => {
                 <h4>폭</h4>
                 <input
                   onChange={(event) => {
-                    objects.current[objectActualIndex.current].width =
-                      event.target.value;
+                    const selectedFigure =
+                      objects.current[objectActualIndex.current];
+
+                    if (selectedFigure.type === "circle") {
+                      selectedFigure.height = event.target.value;
+                      selectedFigure.width = event.target.value;
+                    } else if (selectedFigure.type === "triangle") {
+                      selectedFigure.width =
+                        (Math.sqrt(3) / 2) * event.target.value;
+                    } else {
+                      selectedFigure.width = event.target.value;
+                    }
                   }}
                 />
               </div>
@@ -322,14 +378,8 @@ const Figure = () => {
             <div>
               <button
                 onClick={() => {
-                  objects.current.push({
-                    x: 320,
-                    y: 250,
-                    width: 50,
-                    height: 50,
-                    color: "black",
-                    type: "square",
-                  });
+                  objects.current.push(newFigures.square);
+
                   inputUndo(objects.current);
                 }}
               >
@@ -337,14 +387,8 @@ const Figure = () => {
               </button>
               <button
                 onClick={() => {
-                  objects.current.push({
-                    x: 320,
-                    y: 250,
-                    width: 50,
-                    height: 50,
-                    color: "black",
-                    type: "circle",
-                  });
+                  objects.current.push(newFigures.circle);
+
                   inputUndo(objects.current);
                 }}
               >
@@ -352,14 +396,8 @@ const Figure = () => {
               </button>
               <button
                 onClick={() => {
-                  objects.current.push({
-                    x: 250,
-                    y: 300,
-                    width: 50,
-                    height: (Math.sqrt(3) / 2) * 50,
-                    color: "black",
-                    type: "triangle",
-                  });
+                  objects.current.push(newFigures.triangle);
+
                   inputUndo(objects.current);
                 }}
               >
