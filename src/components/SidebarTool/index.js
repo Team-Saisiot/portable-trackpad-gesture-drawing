@@ -18,7 +18,7 @@ const SideBarTool = ({ tool }) => {
       <span
         className="material-symbols-outlined sidebar-icon"
         style={{
-          transform: isFoldSideBar ? ["translateX(10vmin)"] : ["translateX(0)"],
+          transform: isFoldSideBar ? ["translateX(75px)"] : ["translateX(0)"],
         }}
       >
         {tool.icon}
@@ -40,7 +40,7 @@ const SideBarToolContainer = styled.div`
   align-items: center;
   margin-bottom: 5vh;
   padding: 2vh 0;
-  width: 13vw;
+  width: 200px;
   border-radius: 1vmin;
   user-select: none;
   cursor: pointer;
@@ -49,8 +49,8 @@ const SideBarToolContainer = styled.div`
   .sidebar-icon {
     font-weight: bold;
     user-select: none;
-    margin-left: 2.2vw;
-    margin-right: 1.5vw;
+    margin-left: 40px;
+    margin-right: 20px;
     transition: all 0.4s ease-in-out;
   }
 

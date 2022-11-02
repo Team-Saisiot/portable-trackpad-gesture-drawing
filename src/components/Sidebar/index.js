@@ -66,7 +66,7 @@ const SideBarContainer = styled.div`
   align-items: center;
   flex-direction: column;
   height: 100vh;
-  width: 15vw;
+  width: 200px;
   background-color: #f5efe6;
   box-shadow: 5px 0px 10px hsla(0, 0%, 10%, 0.2);
   transition: all 0.4s ease-in-out;
@@ -113,7 +113,7 @@ const SideBarContainer = styled.div`
     height: 4vmin;
     width: 4vmin;
     border-radius: 2vmin;
-    transform: translateY(3vh) translateX(7.5vw);
+    transform: translateY(3vh) translateX(100px);
     box-shadow: 2px 0px 5px hsla(0, 0%, 10%, 0.2);
     transition: all 0.2s ease-in-out;
     user-select: none;
