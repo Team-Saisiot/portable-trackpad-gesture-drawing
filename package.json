@@ -1,6 +1,6 @@
 {
   "name": "portable-trackpad-gesture-drawing",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "private": true,
   "dependencies": {
     "@reduxjs/toolkit": "^1.8.6",

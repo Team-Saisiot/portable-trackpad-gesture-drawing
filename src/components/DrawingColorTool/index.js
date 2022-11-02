@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 import { setLineColor } from "../../redux/reducers/lineStyle";
