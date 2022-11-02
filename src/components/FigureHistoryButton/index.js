@@ -31,4 +31,4 @@ const FigureHistoryButtonContainer = styled.div`
   }
 `;
 
-export default forwardRef(FigureHistoryButton);
+export default FigureHistoryButton;

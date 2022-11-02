@@ -35,4 +35,4 @@ const DrawingHistoryButtonContainer = styled.div`
   }
 `;
 
-export default forwardRef(DrawingHistoryButton);
+export default DrawingHistoryButton;

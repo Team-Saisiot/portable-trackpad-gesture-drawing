@@ -33,4 +33,4 @@ const DrawingColorToolContainer = styled.div`
   margin-bottom: 1vh;
 `;
 
-export default forwardRef(DrawingColorTool);
+export default DrawingColorTool;

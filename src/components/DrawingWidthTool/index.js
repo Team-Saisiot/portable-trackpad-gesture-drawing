@@ -36,4 +36,4 @@ const DrawingWidthToolContainer = styled.div`
   margin-bottom: 1vh;
 `;
 
-export default forwardRef(DrawingWidthTool);
+export default DrawingWidthTool;
