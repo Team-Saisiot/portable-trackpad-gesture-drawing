@@ -28,8 +28,8 @@ describe("DrawingColorTool", () => {
   it("should show selected lineColor", () => {
     render(<DrawingColorTool />);
 
-    const tag = screen.getByRole("heading");
+    const lineColor = screen.getByRole("heading");
 
-    expect(tag).toHaveTextContent("red");
+    expect(lineColor).toHaveTextContent("red");
   });
 });
