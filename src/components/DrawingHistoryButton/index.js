@@ -6,13 +6,16 @@ const DrawingHistoryButton = () => {
     <DrawingHistoryButtonContainer>
       <h4>히스토리</h4>
       <div>
-        <button className="drawingUndoButton drawing-historyButton">
+        <button className="drawingUndoButton drawing-historyButton" name="undo">
           undo
         </button>
-        <button className="drawingRedoButton drawing-historyButton">
+        <button className="drawingRedoButton drawing-historyButton" name="redo">
           redo
         </button>
-        <button className="drawingClearButton drawing-historyButton">
+        <button
+          className="drawingClearButton drawing-historyButton"
+          name="clear"
+        >
           clear
         </button>
       </div>
