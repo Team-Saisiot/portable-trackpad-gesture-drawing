@@ -3,6 +3,14 @@ import styled from "styled-components";
 import io from "socket.io-client";
 import _ from "lodash";
 import { useSelector } from "react-redux";
+import { undo, redo, clear } from "../../utils/history";
+import { figureVisualizer } from "../../utils/figureVisualizer";
+import NEW_FIGURES from "../../constants/NEW_FIGURES";
+import FigureTool from "../../components/FigureHeightTool";
+import FigureWidthTool from "../../components/FigureWidthTool";
+import FigureColorTool from "../../components/FigureColorTool";
+import AddFigureButton from "../../components/AddFigureButton";
+import FigureHistoryButton from "../../components/FigureHistoryButton";
 
 const Figure = () => {
   const { selectedTool } = useSelector(({ selectedTool }) => selectedTool);
@@ -30,7 +38,7 @@ const Figure = () => {
     let scaleCount = 0;
 
     socketServerRef.current = io.connect(
-      `http://${process.env.REACT_APP_SERVER_IPADDRESS}:${process.env.REACT_APP_SERVER_PORT}`,
+      `${process.env.REACT_APP_SERVER_IPADDRESS}`,
       {
         secure: true,
         reconnect: true,
@@ -50,46 +58,26 @@ const Figure = () => {
     socketServerRef.current.on("figure", (data) => {
       objects.current = data;
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     });
 
     socketPackRef.current.on("drawingGesture", (data) => {
       if (data === "triangle") {
-        objects.current.push({
-          x: 250,
-          y: 300,
-          width: 50,
-          height: (Math.sqrt(3) / 2) * 50,
-          color: "black",
-          type: "triangle",
-        });
+        objects.current.push(NEW_FIGURES.TRIANGLE);
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "circle") {
-        objects.current.push({
-          x: 320,
-          y: 250,
-          width: 50,
-          height: 50,
-          color: "black",
-          type: "circle",
-        });
+        objects.current.push(NEW_FIGURES.CIRCLE);
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "square") {
-        objects.current.push({
-          x: 320,
-          y: 250,
-          width: 50,
-          height: 50,
-          color: "black",
-          type: "square",
-        });
+        objects.current.push(NEW_FIGURES.SQUARE);
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "scaleUp") {
-        scaleCount++;
         const selectedFigure = objects.current[objectActualIndex.current];
+
+        scaleCount++;
 
         if (scaleCount === 2) {
           if (selectedFigure.type === "triangle") {
@@ -103,7 +91,7 @@ const Figure = () => {
           scaleCount = 0;
         }
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       } else if (data === "scaleDown") {
         const selectedFigure = objects.current[objectActualIndex.current];
 
@@ -125,7 +113,7 @@ const Figure = () => {
           scaleCount = 0;
         }
 
-        visualizer();
+        figureVisualizer(context, objects.current);
       }
     });
 
@@ -140,7 +128,7 @@ const Figure = () => {
 
       objects.current = currentObject;
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     });
 
     const onResize = () => {
@@ -150,147 +138,37 @@ const Figure = () => {
 
     window.addEventListener("resize", onResize, false);
     onResize();
-
-    const visualizer = () => {
-      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      context.beginPath();
-
-      for (let i = 0; i < objects.current.length; i++) {
-        if (objects.current[i].type === "square") {
-          context.fillStyle = objects.current[i].color;
-          context.fillRect(
-            objects.current[i].x,
-            objects.current[i].y,
-            objects.current[i].width,
-            objects.current[i].height,
-          );
-        } else if (objects.current[i].type === "circle") {
-          context.beginPath();
-          context.arc(
-            objects.current[i].x,
-            objects.current[i].y,
-            objects.current[i].height / 2,
-            0,
-            2 * Math.PI,
-          );
-
-          context.stroke();
-          context.fillStyle = objects.current[i].color;
-          context.fill();
-        } else if (objects.current[i].type === "triangle") {
-          context.beginPath();
-          context.moveTo(objects.current[i].x, objects.current[i].y);
-          context.lineTo(
-            objects.current[i].x + objects.current[i].width / 2,
-            objects.current[i].y - objects.current[i].height,
-          );
-
-          context.lineTo(
-            objects.current[i].x + objects.current[i].width,
-            objects.current[i].y,
-          );
-
-          context.closePath();
-          context.fillStyle = objects.current[i].color;
-          context.fill();
-        }
-      }
-    };
-
-    visualizer();
-
-    const undo = () => {
-      if (historyIndex.current < 0) {
-        window.alert("더이상 되돌아갈 작업이 없습니다.");
-      } else if (historyIndex.current === 0) {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        objects.current.length = 0;
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-
-        historyIndex.current = -1;
-      } else {
-        const popUndoStore = _.cloneDeep(undoStore.current.pop());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        redoStore.current.unshift(popUndoStore);
-
-        historyIndex.current -= 1;
-
-        const lastUndoStoreData = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        objects.current = lastUndoStoreData;
-
-        visualizer();
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const redo = () => {
-      if (redoStore.current.length > 0) {
-        const shiftRedoStore = _.cloneDeep(redoStore.current.shift());
-
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        undoStore.current.push(shiftRedoStore);
-
-        historyIndex.current += 1;
-
-        const lastUndoStoreData = _.cloneDeep(
-          undoStore.current[historyIndex.current],
-        );
-
-        objects.current = lastUndoStoreData;
-
-        visualizer();
-
-        socketServerRef.current.emit("figureHistory", {
-          undoStore: undoStore.current,
-          redoStore: redoStore.current,
-          historyIndex: historyIndex.current,
-        });
-      }
-    };
-
-    const clear = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      undoStore.current.length = 0;
-      redoStore.current.length = 0;
-      objects.current.length = 0;
-      historyIndex.current = -1;
-
-      socketServerRef.current.emit("figureHistory", {
-        undoStore: undoStore.current,
-        redoStore: redoStore.current,
-        historyIndex: historyIndex.current,
-      });
-    };
+    figureVisualizer(context, objects.current);
 
     const onMouseDown = (event) => {
       for (let i = 0; i < objects.current.length; i++) {
         const { x, y, height, width } = objects.current[i];
-
-        if (
+        const identifySquare =
           x < event.clientX &&
           width + x > event.clientX &&
           y < event.clientY &&
-          height + y > event.clientY
-        ) {
+          height + y > event.clientY;
+
+        const identifyCircle =
+          x - width / 2 < event.clientX &&
+          width / 2 + x > event.clientX &&
+          y - height / 2 < event.clientY &&
+          height / 2 + y > event.clientY;
+
+        const identifyTriangle =
+          x < event.clientX &&
+          width + x > event.clientX &&
+          y > event.clientY &&
+          height + y > event.clientY;
+
+        const identifyPoint =
+          objects.current[i].type === "circle"
+            ? identifyCircle
+            : objects.current[i].type === "square"
+            ? identifySquare
+            : identifyTriangle;
+
+        if (identifyPoint) {
           objectActualIndex.current = i;
           objectActual.current = objects.current[i];
           initialPosition.current = [event.clientX - x, event.clientY - y];
@@ -308,7 +186,7 @@ const Figure = () => {
 
       socketServerRef.current.emit("figure", objects.current);
 
-      visualizer();
+      figureVisualizer(context, objects.current);
     };
 
     const onMouseUp = (event) => {
@@ -335,9 +213,52 @@ const Figure = () => {
     canvas.addEventListener("mouseout", onMouseUp, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
 
-    clearElement.addEventListener("click", clear);
-    redoElement.addEventListener("click", redo);
-    undoElement.addEventListener("click", undo);
+    window.addEventListener("click", () => {
+      figureVisualizer(context, objects.current);
+    });
+
+    window.addEventListener("keyup", () => {
+      figureVisualizer(context, objects.current);
+    });
+
+    clearElement.addEventListener("click", () => {
+      clear(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
+
+    redoElement.addEventListener("click", () => {
+      redo(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
+
+    undoElement.addEventListener("click", () => {
+      undo(
+        "figure",
+        context,
+        canvas,
+        socketServerRef,
+        undoStore,
+        redoStore,
+        historyIndex,
+        objects,
+      );
+    });
 
     return () => {
       socketServerRef.current.off();
@@ -381,102 +302,27 @@ const Figure = () => {
           <h1>Figure</h1>
           <div className="figure-toolBox">
             <div className="controlBox">
-              <div>
-                <h4>높이</h4>
-                <input
-                  onChange={(event) => {
-                    objects.current[objectActualIndex.current].height =
-                      event.target.value;
-                  }}
-                />
-              </div>
-              <div>
-                <h4>폭</h4>
-                <input
-                  onChange={(event) => {
-                    objects.current[objectActualIndex.current].width =
-                      event.target.value;
-                  }}
-                />
-              </div>
-              <div>
-                <h4>색상</h4>
-                <input
-                  type="color"
-                  onChange={(event) => {
-                    objects.current[objectActualIndex.current].color =
-                      event.target.value;
-                  }}
-                />
-              </div>
+              <FigureTool ref={{ objects, objectActualIndex }} />
+              <FigureWidthTool ref={{ objects, objectActualIndex }} />
+              <FigureColorTool ref={{ objects, objectActualIndex }} />
             </div>
           </div>
           <div className="buttonBox">
             <h4>도형 추가</h4>
             <div>
-              <button
-                onClick={() => {
-                  objects.current.push({
-                    x: 320,
-                    y: 250,
-                    width: 50,
-                    height: 50,
-                    color: "black",
-                    type: "square",
-                  });
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">square</span>
-              </button>
-              <button
-                onClick={() => {
-                  objects.current.push({
-                    x: 320,
-                    y: 250,
-                    width: 50,
-                    height: 50,
-                    color: "black",
-                    type: "circle",
-                  });
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">circle</span>
-              </button>
-              <button
-                onClick={() => {
-                  objects.current.push({
-                    x: 250,
-                    y: 300,
-                    width: 50,
-                    height: (Math.sqrt(3) / 2) * 50,
-                    color: "black",
-                    type: "triangle",
-                  });
-                  inputUndo(objects.current);
-                }}
-              >
-                <span className="material-symbols-outlined">
-                  change_history
-                </span>
-              </button>
+              {["square", "circle", "triangle"].map((value, index) => {
+                return (
+                  <AddFigureButton
+                    inputUndo={inputUndo}
+                    type={value}
+                    ref={{ objects }}
+                    key={index}
+                  />
+                );
+              })}
             </div>
           </div>
-          <div className="figure-historyBox">
-            <h4>히스토리</h4>
-            <div>
-              <button className="figureUndoButton figure-historyButton">
-                undo
-              </button>
-              <button className="figureRedoButton figure-historyButton">
-                redo
-              </button>
-              <button className="figureClearButton figure-historyButton">
-                clear
-              </button>
-            </div>
-          </div>
+          <FigureHistoryButton />
           <div
             onClick={() => {
               setIsModalShow(false);
@@ -641,24 +487,10 @@ const FigureContainer = styled.div`
     flex-direction: column;
     margin-top: 2vh;
 
-    button {
-      margin: 0 0.5vmin;
-      padding: 1vmin 1.4vmin;
-      color: #777;
-      font-size: 1.5vmin;
-      border: none;
-      border-radius: 1.5vmin;
-      user-select: none;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-
-      :hover {
-        background-color: hsl(0, 0%, 80%);
-      }
-
-      :active {
-        background-color: hsl(0, 0%, 60%);
-      }
+    div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
   }
 

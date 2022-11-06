@@ -1,7 +1,7 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
-import { setIsFoldSideBar } from "../../store";
+import { setIsFoldSideBar } from "../../redux/reducers/isFoldSideBar";
 import SideBarTool from "../SidebarTool";
 
 const SideBar = () => {
@@ -19,6 +19,7 @@ const SideBar = () => {
       style={{
         transform: isFoldSideBar ? ["translateX(-10vmin)"] : ["translateX(0)"],
       }}
+      data-testid="SideBarContainer"
     >
       <div className="sidebar-title">
         <span
@@ -28,6 +29,7 @@ const SideBar = () => {
               ? ["translateX(10vmin)"]
               : ["translateX(0)"],
           }}
+          data-testid="sidebar-title"
         >
           GD
         </span>
@@ -35,6 +37,7 @@ const SideBar = () => {
           style={{
             opacity: isFoldSideBar ? 0 : 1,
           }}
+          data-testid="sidebar-title-div"
         >
           <h5>Gesture</h5>
           <h5>Drawing</h5>
@@ -47,9 +50,9 @@ const SideBar = () => {
         }}
       >
         {isFoldSideBar ? (
-          <span className="material-symbols-outlined">navigate_before</span>
-        ) : (
           <span className="material-symbols-outlined">navigate_next</span>
+        ) : (
+          <span className="material-symbols-outlined">navigate_before</span>
         )}
       </div>
       {tools.map((value, index) => {
@@ -66,7 +69,7 @@ const SideBarContainer = styled.div`
   align-items: center;
   flex-direction: column;
   height: 100vh;
-  width: 15vw;
+  width: 200px;
   background-color: #f5efe6;
   box-shadow: 5px 0px 10px hsla(0, 0%, 10%, 0.2);
   transition: all 0.4s ease-in-out;
@@ -113,7 +116,7 @@ const SideBarContainer = styled.div`
     height: 4vmin;
     width: 4vmin;
     border-radius: 2vmin;
-    transform: translateY(3vh) translateX(7.5vw);
+    transform: translateY(3vh) translateX(100px);
     box-shadow: 2px 0px 5px hsla(0, 0%, 10%, 0.2);
     transition: all 0.2s ease-in-out;
     user-select: none;
